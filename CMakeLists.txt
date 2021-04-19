@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 # Project define
 project(DevAutomator)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 set(ROOT .)
 set(SRCs ${ROOT}/src)
 set(Libs ${ROOT}/lib)

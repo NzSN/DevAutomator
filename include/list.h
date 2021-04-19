@@ -13,16 +13,15 @@ typedef struct LNode {
 typedef struct List {
     LNode *head;
     LNode *tail;
-    struct list * (*copy)(struct List *);
-    void (*release)(struct List *);
-    _Bool (*equal)(struct List *, struct List *);
+    void * (*copy)(const void *);
+    void (*release)(void *);
+    _Bool (*equal)(const void *, const void *);
     int length;
 } List;
 
 typedef struct ListIter {
-    LNode *current;
-    LNode *head;
-    LNode *tail;
+    LNode *next;
+    int direction;
 } ListIter;
 
 /* List functions  s macros */
@@ -37,14 +36,16 @@ typedef struct ListIter {
 
 /* Prototypes */
 List * listCreate(void);
-void * listRelease(List *);
+void   listRelease(List *);
 List * listDup(List *);
-List * listEqual(List *, List *);
+_Bool  listEqual(List *, List *);
 List * listAppend(List *, void *value);
 List * listPrepend(List *, void *value);
-ListIter * listIter(List *);
-void * listPrev(ListIter *);
-void * listNext(ListIter *);
+List * listDel(List *, LNode *node);
+ListIter * listIter(List *, int dir);
+LNode * listPrev(ListIter *);
+LNode * listNext(ListIter *);
+ListIter * listRewind(List *, ListIter *);
 
 
 
