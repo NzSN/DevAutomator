@@ -42,7 +42,8 @@ List *listDup(List *l) {
 
 _Bool listEqual(List *l, List *r) {
     if (l->length != r->length ||
-        l->copy != r->copy) {
+        l->copy != r->copy ||
+        l->equal == NULL || r->equal == NULL) {
         return false;
     }
 
