@@ -3,9 +3,36 @@
 #ifndef _DICT_H_
 #define _DICT_H_
 
-typedef struct Dict {
+typedef struct DictType {
+    int (*hash)(void *);
+    _Bool (*equal)(void *, void *);
+    void * (*dup)(void *);
+    void (*release)(void *);
+} DictType;
 
+typedef struct DictEntry {
+    void *key;
+    void *data;
+    struct DictEntry *next;
+} DictEntry;
+
+typedef struct Dict {
+  DictType *dt;
+  // Number of entry
+  int k;
+  DictEntry *entries;
+  int total;
 } Dict;
 
+/* Dict functions as macros */
+#define dictHash(d, o) ((d)->dt->hash(o))
+#define dictTotal(d) ((d)->total)
+
+/* Prototypes */
+Dict * dictCreate(DictType *, int k);
+void dictRelease(Dict *d);
+void dictAdd(Dict *d, void *key, void *data);
+void dictReplace(Dict *d, void *key, void *data);
+void dictDelete(Dict *d, void *key);
 
 #endif /* _DICT_H_ */
