@@ -7,7 +7,8 @@ typedef struct DictType {
     int (*hash)(void *);
     _Bool (*equal)(void *, void *);
     void * (*dup)(void *);
-    void (*release)(void *);
+    void (*keyRelease)(void *);
+    void (*dataRelease)(void *);
 } DictType;
 
 typedef struct DictEntry {
@@ -20,13 +21,15 @@ typedef struct Dict {
   DictType *dt;
   // Number of entry
   int k;
-  DictEntry *entries;
+  DictEntry **entries;
   int total;
 } Dict;
 
 /* Dict functions as macros */
-#define dictHash(d, o) ((d)->dt->hash(o))
 #define dictTotal(d) ((d)->total)
+#define dictGetEntry(d, idx) ((d)->entries[(idx)])
+#define dictType(d) ((d)->dt)
+#define dictHashing(d, k) ((d)->dt->hash(k))
 
 /* Prototypes */
 Dict * dictCreate(DictType *, int k);
