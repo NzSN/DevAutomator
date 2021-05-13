@@ -3,6 +3,7 @@
 
 /* Private Prototypes */
 void dictEntryRelease(DictEntry *ent, DictType *dt);
+DictEntry * dictEntryCreate(void *key, void *data);
 
 
 Dict *dictCreate(DictType *dt, int k) {
@@ -17,7 +18,7 @@ Dict *dictCreate(DictType *dt, int k) {
  * free it */
 void dictRelease(Dict *d) {
     DictEntry *entry;
-    int k = dictTotal(d);
+    int k = dictNumOfEntries(d);
 
     if (d == NULL) {
         return;
@@ -33,6 +34,7 @@ void dictRelease(Dict *d) {
         dictEntryRelease(entry, dictType(d));
     }
 
+    free(d->entries);
     free(d);
 }
 
@@ -42,8 +44,10 @@ void dictEntryRelease(DictEntry *ent, DictType *dt) {
     while (current != NULL) {
         next = current->next;
 
-        dt->keyRelease(current->key);
-        dt->dataRelease(current->data);
+        if (dt->keyRelease)
+            dt->keyRelease(current->key);
+        if (dt->dataRelease)
+            dt->dataRelease(current->data);
 
         free(current);
         current = next;
@@ -53,10 +57,26 @@ void dictEntryRelease(DictEntry *ent, DictType *dt) {
 void dictAdd(Dict *d, void *key, void *data) {
     int idx = dictHashing(d, key);
 
-    DictEntry *entry = dictGetEntry(d, idx);
+    DictEntry *entry = dictGetEntry(d, idx),
+        *new_entry = dictEntryCreate(key, data);
     if (entry == NULL) {
-
+        dictSetEntry(d, idx, new_entry);
+    } else {
+        /* Hash conflict */
+        new_entry->next = entry;
+        dictSetEntry(d, idx, new_entry);
     }
+
+    d->total++;
+}
+
+DictEntry * dictEntryCreate(void *key, void *data) {
+    DictEntry *entry = (DictEntry *)calloc(1, sizeof(DictEntry));
+
+    entry->key = key;
+    entry->data = data;
+
+    return entry;
 }
 
 void dictReplace(Dict *d, void *key, void *data) {

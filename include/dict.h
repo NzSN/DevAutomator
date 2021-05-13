@@ -27,7 +27,9 @@ typedef struct Dict {
 
 /* Dict functions as macros */
 #define dictTotal(d) ((d)->total)
+#define dictNumOfEntries(d) ((d)->k)
 #define dictGetEntry(d, idx) ((d)->entries[(idx)])
+#define dictSetEntry(d, idx, ent) ((d)->entries[idx] = ent)
 #define dictType(d) ((d)->dt)
 #define dictHashing(d, k) ((d)->dt->hash(k))
 
