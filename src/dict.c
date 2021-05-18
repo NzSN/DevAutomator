@@ -2,6 +2,8 @@
 #include "malloc.h"
 
 /* Private Prototypes */
+DictEntry * dictEntryFind(DictEntry *ent, void *key, DictType *dt);
+void dictEntryDelete(DictEntry *ent, DictType *dt);
 void dictEntryRelease(DictEntry *ent, DictType *dt);
 DictEntry * dictEntryCreate(void *key, void *data);
 
@@ -38,22 +40,6 @@ void dictRelease(Dict *d) {
     free(d);
 }
 
-void dictEntryRelease(DictEntry *ent, DictType *dt) {
-    DictEntry *current = ent, *next;
-
-    while (current != NULL) {
-        next = current->next;
-
-        if (dt->keyRelease)
-            dt->keyRelease(current->key);
-        if (dt->dataRelease)
-            dt->dataRelease(current->data);
-
-        free(current);
-        current = next;
-    }
-}
-
 void dictAdd(Dict *d, void *key, void *data) {
     int idx = dictHashing(d, key);
 
@@ -64,6 +50,7 @@ void dictAdd(Dict *d, void *key, void *data) {
     } else {
         /* Hash conflict */
         new_entry->next = entry;
+        entry->prev = new_entry;
         dictSetEntry(d, idx, new_entry);
     }
 
@@ -80,9 +67,69 @@ DictEntry * dictEntryCreate(void *key, void *data) {
 }
 
 void dictReplace(Dict *d, void *key, void *data) {
+    int idx = dictHashing(d, key);
 
+    DictEntry *entry = dictGetEntry(d, idx);
+    entry = dictEntryFind(entry, key, dictType(d));
+
+    entry->data = data;
 }
 
 void dictDelete(Dict *d, void *key) {
+    int idx = dictHashing(d, key);
 
+    DictEntry *entry = dictGetEntry(d, idx);
+    if (entry == NULL)
+        return;
+
+    entry = dictEntryFind(entry, key, dictType(d));
+    dictEntryDelete(entry, dictType(d));
+    dictSetEntry(d, idx, NULL);
+    d->total--;
+}
+
+
+/*****************************************************************************/
+/*                          Procedures of DictEntry                          */
+/*****************************************************************************/
+void dictEntryDelete(DictEntry *ent, DictType *dt) {
+  if (ent->prev != NULL) {
+      ent->prev->next = ent->next;
+  }
+  if (ent->next != NULL) {
+      ent->next->prev = ent->prev;
+  }
+
+  if (dt->keyRelease)
+      dt->keyRelease(ent->key);
+  if (dt->dataRelease)
+      dt->dataRelease(ent->data);
+  free(ent);
+}
+
+DictEntry * dictEntryFind(DictEntry *ent, void *key, DictType *dt) {
+    DictEntry *current = ent;
+
+    while (current != NULL) {
+        if (dt->equal(key, current->key)) {
+            return current;
+        }
+        current = current->next;
+    }
+}
+
+void dictEntryRelease(DictEntry *ent, DictType *dt) {
+    DictEntry *current = ent, *next;
+
+    while (current != NULL) {
+        next = current->next;
+
+        if (dt->keyRelease)
+            dt->keyRelease(current->key);
+        if (dt->dataRelease)
+            dt->dataRelease(current->data);
+
+        free(current);
+        current = next;
+    }
 }

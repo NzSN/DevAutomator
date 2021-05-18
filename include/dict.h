@@ -14,6 +14,7 @@ typedef struct DictType {
 typedef struct DictEntry {
     void *key;
     void *data;
+    struct DictEntry *prev;
     struct DictEntry *next;
 } DictEntry;
 
@@ -31,13 +32,14 @@ typedef struct Dict {
 #define dictGetEntry(d, idx) ((d)->entries[(idx)])
 #define dictSetEntry(d, idx, ent) ((d)->entries[idx] = ent)
 #define dictType(d) ((d)->dt)
-#define dictHashing(d, k) ((d)->dt->hash(k))
+#define dictHashing(d, key) ((d)->dt->hash(key) % d->k)
 
 /* Prototypes */
 Dict * dictCreate(DictType *, int k);
 void dictRelease(Dict *d);
 void dictAdd(Dict *d, void *key, void *data);
-void dictReplace(Dict *d, void *key, void *data);
 void dictDelete(Dict *d, void *key);
+_Bool dictIsExists(Dict *d, void *key);
+void dictReplace(Dict *d, void *key, void *data);
 
 #endif /* _DICT_H_ */
