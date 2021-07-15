@@ -94,5 +94,42 @@ CTEST2(DictUT, Replace) {
     dictReplace(d, "K1", strdup("654321"));
 
     /* Verify */
+    void *val = dictGet(d, "K1");
+    ASSERT_STR("654321", val);
+}
 
+CTEST2(DictUT, Conflict_Add) {
+    Dict *d = data->d;
+
+    dictAdd(d, strdup("123"), strdup("123456"));
+    dictAdd(d, strdup("132"), strdup("123456"));
+    dictAdd(d, strdup("321"), strdup("123456"));
+}
+
+CTEST2(DictUT, Conflict_Get) {
+    Dict *d = data->d;
+
+    dictAdd(d, strdup("123"), strdup("123456"));
+    dictAdd(d, strdup("132"), strdup("123457"));
+    dictAdd(d, strdup("321"), strdup("123458"));
+
+    void *val = dictGet(d, "123");
+    ASSERT_STR("123456", val);
+
+    val = dictGet(d, "132");
+    ASSERT_STR("123457", val);
+
+    val = dictGet(d, "321");
+    ASSERT_STR("123458", val);
+}
+
+CTEST2(DictUT, Conflict_IsExists) {
+    Dict *d = data->d;
+
+    dictAdd(d, strdup("123"), strdup("123456"));
+    dictAdd(d, strdup("132"), strdup("123457"));
+
+    ASSERT_EQUAL(true, dictIsExists(d, "123"));
+    ASSERT_EQUAL(true, dictIsExists(d, "132"));
+    ASSERT_EQUAL(false, dictIsExists(d, "133"));
 }

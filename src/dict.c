@@ -72,6 +72,9 @@ void dictReplace(Dict *d, void *key, void *data) {
     DictEntry *entry = dictGetEntry(d, idx);
     entry = dictEntryFind(entry, key, dictType(d));
 
+    if (dictType(d)->dataRelease)
+        dictType(d)->dataRelease(entry->data);
+
     entry->data = data;
 }
 
@@ -88,6 +91,24 @@ void dictDelete(Dict *d, void *key) {
     d->total--;
 }
 
+void *dictGet(Dict *d, void *key) {
+    int idx = dictHashing(d, key);
+
+    DictEntry *entry = dictGetEntry(d, idx);
+    if (entry == NULL)
+        return NULL;
+
+    entry = dictEntryFind(entry, key, dictType(d));
+    if (entry == NULL)
+        return NULL;
+
+    return entry->data;
+}
+
+_Bool dictIsExists(Dict *d, void *key) {
+    void *data = dictGet(d, key);
+    return data != NULL;
+}
 
 /*****************************************************************************/
 /*                          Procedures of DictEntry                          */

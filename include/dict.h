@@ -38,6 +38,7 @@ typedef struct Dict {
 Dict * dictCreate(DictType *, int k);
 void dictRelease(Dict *d);
 void dictAdd(Dict *d, void *key, void *data);
+void * dictGet(Dict *d, void *key);
 void dictDelete(Dict *d, void *key);
 _Bool dictIsExists(Dict *d, void *key);
 void dictReplace(Dict *d, void *key, void *data);

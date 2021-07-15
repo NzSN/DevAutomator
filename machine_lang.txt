@@ -1,0 +1,16 @@
+Terminal Defined
+Num :: [0-9]
+
+Non-Terminal Defined
+prog :: stmts;
+
+stmts :: stmt stmts; stmt;
+
+stmt :: Condjmp Exp Num Num
+        Assign Var Stmt
+        Exp
+
+Exp :: Plus Exp Exp
+       Minus Exp Exp
+       Mult
+       Div
