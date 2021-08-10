@@ -50,6 +50,9 @@ class Operation(Message):
     def op(self) -> typ.Tuple[opcode, opargs]:
         return self._op
 
+    def __eq__(self, op: 'Operation') -> bool:
+        return self._op == op.op()
+
 
 class Config(Operation):
     """
@@ -107,6 +110,9 @@ class Property:
     def __eq__(self, property: 'Property') -> bool:
         return self._property == property._property
 
+    def __str__(self) -> str:
+        return self._property
+
 
 class Machine:
     """
@@ -120,3 +126,11 @@ class Machine:
         self._ident = ident
         self._properties = properties
         self._operations = operations
+
+    def hasProperty(self, pident: str) -> bool:
+        theProperty = [pident == p for p in self._properties]
+        return theProperty != []
+
+    def hasOperation(self, opcode) -> bool:
+        theOp = [op.op()[0] == opcode for op in self._operations]
+        return theOp != []
