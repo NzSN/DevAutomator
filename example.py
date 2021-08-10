@@ -15,11 +15,16 @@ def TC():
     else:
         PC1.act("Send", "TCP", dut)
 
-    GL8900.setVer(str(1+1))
+    result = GL8900T.serial("info")
 
-    while 1 == 1:
-        pass
+    # This analysis is perform in python layer, and the result
+    # will return to DA layer.
+    analysisResult = DA.ComplexAnalysisByRegex("a|b", result)
 
+    if analysisResult is True:
+        return True
+    else:
+        return False
 
 def main():
     pass
