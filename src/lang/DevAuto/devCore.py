@@ -1,6 +1,7 @@
 # DevCore is collection of fundamental objects in DevAuto.
 
 import typing as typ
+from collections import namedtuple
 
 
 class Message:
@@ -24,8 +25,7 @@ class Message:
         return self._content
 
 
-opcode = str
-opargs = str
+opTuple = namedtuple("opTuple", "opcode opargs")
 
 
 class Operation(Message):
@@ -38,7 +38,7 @@ class Operation(Message):
     """
 
     def __init__(self, source: str, dest: str,
-                 op: typ.Tuple[opcode, opargs]) -> None:
+                 op: opTuple) -> None:
 
         self._op = op
 
@@ -47,7 +47,7 @@ class Operation(Message):
 
         Message.__init__(self, source, dest, content)
 
-    def op(self) -> typ.Tuple[opcode, opargs]:
+    def op(self) -> opTuple:
         return self._op
 
     def __eq__(self, op: 'Operation') -> bool:
@@ -70,7 +70,7 @@ class Config(Operation):
     config_indicater = "cfg"
 
     def __init__(self, source: str, dest: str,
-                 op: typ.Tuple[opcode, opargs]) -> None:
+                 op: typ.Tuple[str]) -> None:
         Operation.__init__(self, source, dest, op)
 
         # Append config indicater to tail of operation
@@ -91,7 +91,7 @@ class Query(Operation):
     query_indicater = "query"
 
     def __init__(self, source: str, dest: str,
-                 op: typ.Tuple[opcode, opargs]) -> None:
+                 op: opTuple) -> None:
         Operation.__init__(self, source, dest, op)
 
         # Append query indicater to tail of operation
@@ -104,14 +104,52 @@ class Property:
     on python layer, it just an unique string within a machine.
     """
 
-    def __init__(self, p: str) -> None:
+    def __init__(self, p: str, *propval: typ.List[str]) -> None:
         self._property = p
+        self._propVal = propval
 
     def __eq__(self, property: 'Property') -> bool:
-        return self._property == property._property
+        return (self._property, self._propVal) == \
+            (property._property, property._propVal)
 
     def __str__(self) -> str:
         return self._property
+
+
+class OpSpec:
+    """
+    An specification of operations.
+    """
+
+    def __init__(self, opcode: str,
+                 para: typ.Tuple[str], ret: typ.Tuple[str]) -> None:
+        self._opcode = opcode
+        self._para = para
+        self._ret = ret
+
+    def __eq__(self, spec: 'OpSpec') -> bool:
+        return (self._opcode, self._para, self._ret) == \
+            (spec._opcode, spec._para, spec._ret)
+
+    def opcode(self) -> str:
+        return self._opcode
+
+    def parameter(self) -> typ.Tuple[str]:
+        return self._para
+
+    def retVal(self) -> typ.Tuple[str]:
+        return self._ret
+
+
+class OPERATION_NOT_DEFINED(Exception):
+
+    def __init__(self, machine: str, opName: str) -> None:
+        self._machine = machine
+        self._opName = opName
+
+    def __str__(self) -> str:
+        return "Operation " + self._opName + " is not define in machine " + \
+            self._machine
 
 
 class Machine:
@@ -122,7 +160,7 @@ class Machine:
     """
 
     def __init__(self, ident: str, properties: typ.List[Property],
-                 operations: typ.List[Operation]) -> None:
+                 operations: typ.List[OpSpec]) -> None:
         self._ident = ident
         self._properties = properties
         self._operations = operations
@@ -131,6 +169,13 @@ class Machine:
         theProperty = [pident == p for p in self._properties]
         return theProperty != []
 
-    def hasOperation(self, opcode) -> bool:
+    def hasOperation(self, opcode: str) -> bool:
         theOp = [op.op()[0] == opcode for op in self._operations]
         return theOp != []
+
+    def operation(self, op: typ.Callable) -> typ.Callable:
+        if not self.hasOperation(op.__name__):
+            # fixme: need to raise exception
+            raise OPERATION_NOT_DEFINED(self._ident, op.__name__)
+        else:
+            return op
