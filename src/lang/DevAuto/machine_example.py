@@ -61,3 +61,20 @@ class BoxMachine(core.Machine):
     @core.Machine.Operation
     def get(self) -> core.Operation:
         return core.Operation("core", "Box", core.opTuple("get", None))
+
+
+###############################################################################
+#                      Network Device with four interface                     #
+###############################################################################
+NA = "N/A"
+NDProp = [
+    core.Property("Interface",
+                  "interface-0/1", "interface-0/2",
+                  "interface-0/3", "interface-0/4"),
+    core.Property("Interface-State", {
+        "interface-0/1": NA,
+        "interface-0/2": NA,
+        "interface-0/3": NA,
+        "interface-0/4": NA
+    })
+]

@@ -98,13 +98,16 @@ class Query(Operation):
         self._content = self._content + "::" + self.query_indicater
 
 
+PropVal = typ.Union[typ.List[str], typ.Mapping[str, str]]
+
+
 class Property:
     """
     Property is part of machine, it show that what feature a machine has,
     on python layer, it just an unique string within a machine.
     """
 
-    def __init__(self, p: str, *propval: typ.List[str]) -> None:
+    def __init__(self, p: str, *propval: PropVal) -> None:
         self._property = p
         self._propVal = propval
 
