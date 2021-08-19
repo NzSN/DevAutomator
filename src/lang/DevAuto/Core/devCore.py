@@ -1,7 +1,8 @@
 # DevCore is collection of fundamental objects in DevAuto.
 
 import typing as typ
-from collections import namedtuple
+import DevAuto.Core.devCoreExcep as dcexcep
+from .devCustomTypes import opTuple, PropVal
 
 
 class Message:
@@ -23,9 +24,6 @@ class Message:
 
     def content(self) -> str:
         return self._content
-
-
-opTuple = namedtuple("opTuple", "opcode opargs")
 
 
 class Operation(Message):
@@ -98,18 +96,23 @@ class Query(Operation):
         self._content = self._content + "::" + self.query_indicater
 
 
-PropVal = typ.Union[typ.List[str], typ.Mapping[str, str]]
-
-
 class Property:
     """
     Property is part of machine, it show that what feature a machine has,
     on python layer, it just an unique string within a machine.
     """
 
-    def __init__(self, p: str, *propval: PropVal) -> None:
+    def __init__(self, p: str, propval: PropVal) -> None:
         self._property = p
         self._propVal = propval
+
+    def __getitem__(self, index: typ.Union[int, str]) -> str:
+        self._propIndexArgCheck(index)
+        return self._propVal[index]
+
+    def __setitem__(self, key: typ.Union[int, str], value: str) -> None:
+        self._propIndexArgCheck(key)
+        self._propVal[key] = value
 
     def __eq__(self, property: 'Property') -> bool:
         return (self._property, self._propVal) == \
@@ -117,6 +120,14 @@ class Property:
 
     def __str__(self) -> str:
         return self._property
+
+    def _propIndexArgCheck(self, idxArg: typ.Union[str, int]) -> bool:
+        typeOfProp = type(self._propVal).__name__
+        indexType = type(idxArg).__name__
+
+        if (typeOfProp == "dict" and indexType != "str") or \
+           (typeOfProp == "list" and indexType != "int"):
+            raise dcexcep.PROP_VAL_TYPE_ERROR(self._property, self.__getitem__)
 
 
 class OpSpec:
@@ -144,17 +155,6 @@ class OpSpec:
         return self._ret
 
 
-class OPERATION_NOT_DEFINED(Exception):
-
-    def __init__(self, machine: str, opName: str) -> None:
-        self._machine = machine
-        self._opName = opName
-
-    def __str__(self) -> str:
-        return "Operation " + self._opName + " is not define in machine " + \
-            self._machine
-
-
 class Machine:
     """
     An entity that able to perform operations and have
@@ -179,6 +179,7 @@ class Machine:
     def operation(self, op: typ.Callable) -> typ.Callable:
         if not self.hasOperation(op.__name__):
             # fixme: need to raise exception
-            raise OPERATION_NOT_DEFINED(self._ident, op.__name__)
+            raise dcexcep.MACHINE_OPERATION_NOT_DEFINED(
+                self._ident, op.__name__)
         else:
             return op
