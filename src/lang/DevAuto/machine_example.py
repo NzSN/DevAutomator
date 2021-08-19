@@ -3,7 +3,8 @@ This file provide an example of how to make a more concrete macine
 from Machine within DevCore.
 """
 
-import devCore as core
+import DevAuto.Core as core
+import DevAuto.Core.devCustomTypes as da_typ
 
 
 ###############################################################################
@@ -32,9 +33,9 @@ boxOpSpec = [
     # Close
     core.OpSpec("close", (), None),
     # Put
-    core.OpSpec("put", ("Candy"), None),
+    core.OpSpec("put", (("Candy", str)), None),
     # Get
-    core.OpSpec("get", (), ("Candy"))
+    core.OpSpec("get", (), ("Candy", str))
 ]
 
 
@@ -78,3 +79,38 @@ NDProp = [
         "interface-0/4": NA
     })
 ]
+
+NDOP = [
+    # Startup
+    core.OpSpec("startup", (), None),
+    # Shutdown
+    core.OpSpec("shutdown", (), None),
+    # SendEth
+    core.OpSpec("send", (("Package", bytes), ("port", str)), None),
+    # routeTbl
+    core.OpSpec("routeTbl", (), None)
+]
+
+
+class NetDevice(core.Machine):
+
+    def __init__(self) -> None:
+        core.Machine.__init__(self, "ND", NDProp, NDOP)
+
+    @core.Machine.Operation
+    def startup(self) -> core.Operation:
+        return core.Operation("core", "ND", core.opTuple("startup", None))
+
+    @core.Machine.Operation
+    def shutdown(self) -> core.Operation:
+        return core.Operation("core", "ND", core.opTuple("shutdown", None))
+
+    @core.Machine.Operation("core", "ND", "send")
+    def send(self, package: bytes, port: int) -> core.Operation:
+        return core.Operation(
+            "core", "ND", core.opTuple("send", (package, port)))
+
+    @core.Machine.Operation
+    def routeTbl(self) -> da_typ.DA_DICT:
+        query = core.Query("core", "ND", ("route", None, da_typ.DA_DICT))
+        return self.operate(query)

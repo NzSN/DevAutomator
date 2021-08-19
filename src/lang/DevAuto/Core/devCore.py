@@ -1,8 +1,9 @@
 # DevCore is collection of fundamental objects in DevAuto.
 
 import typing as typ
+import DevAuto.Core.devCustomTypes as da_typ
 import DevAuto.Core.devCoreExcep as dcexcep
-from .devCustomTypes import opTuple, PropVal
+from .devCustomTypes import opTuple, PropVal, opParameter, opRet
 
 
 class Message:
@@ -136,7 +137,7 @@ class OpSpec:
     """
 
     def __init__(self, opcode: str,
-                 para: typ.Tuple[str], ret: typ.Tuple[str]) -> None:
+                 para: opParameter, ret: opRet) -> None:
         self._opcode = opcode
         self._para = para
         self._ret = ret
@@ -148,10 +149,10 @@ class OpSpec:
     def opcode(self) -> str:
         return self._opcode
 
-    def parameter(self) -> typ.Tuple[str]:
+    def parameter(self) -> opParameter:
         return self._para
 
-    def retVal(self) -> typ.Tuple[str]:
+    def retVal(self) -> opRet:
         return self._ret
 
 
@@ -175,6 +176,14 @@ class Machine:
     def hasOperation(self, opcode: str) -> bool:
         theOp = [op.op()[0] == opcode for op in self._operations]
         return theOp != []
+
+    def operate(self, op: Operation) -> any:
+        opRet = op.op().opret
+
+        # Make sure return type of operation is correct
+        assert(issubclass(da_typ.DA_Type, opRet))
+
+        return opRet()
 
     def operation(self, op: typ.Callable) -> typ.Callable:
         if not self.hasOperation(op.__name__):

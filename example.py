@@ -3,19 +3,11 @@ import DevAuto as DA
 @DA.testcase
 def TC():
     GL8900T = DA.Dut("GL8900T")
-    GL5610T = DA.Dut("GL5610T")
 
-    GL8900 = DA.Tester("GL8900")
-    PC1 = DA.Tester("PC")
-    PC2 = DA.Tester("PC")
+    tbl = GL8900T.routeTBL()
 
-    m = GL8900T.query("route")  # type: DA.map,
-    if m["127.0.0.1"]["MAC"] == "01:02:03:04:05:06":
-        PC1.act("Send", "ICMP", dut)
-    else:
-        PC1.act("Send", "TCP", dut)
-
-    result = GL8900T.serial("info")
+    if tbl["127.0.0.0"]["netmask"] == "255.255.255.255":
+        pass
 
     # This analysis is perform in python layer, and the result
     # will return to DA layer.
@@ -25,6 +17,20 @@ def TC():
         return True
     else:
         return False
+
+
+def TC1():
+    GL8900T = DA.Dut("GL8900T")
+    GL5610 = DA.Dut("GL5610")
+
+    a = GL8900T.numOfPorts()
+    b = GL5610.numOfPorts()
+
+    c = a + b
+
+    if a > b:
+        pass
+
 
 def main():
     pass
