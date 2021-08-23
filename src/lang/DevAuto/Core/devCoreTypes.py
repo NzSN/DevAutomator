@@ -10,9 +10,9 @@ PropVal = typ.Union[typ.List[str], typ.Mapping[str, str]]
 ###############################################################################
 class DType:
 
-    def __init__(self, t: type) -> None:
+    def __init__(self, t: typ.Union[type, None]) -> None:
         self._origin = t
-        self._value = None  # type: any
+        self._value = None  # type: typ.Any
 
 
 class DINT(DType):
@@ -58,7 +58,7 @@ class DNone(DType):
 
 
 ###############################################################################
-#                                  Operation                                   #
+#                                  Operation                                  #
 ###############################################################################
 # opargs :: opParameter
 opTuple = namedtuple("opTuple", "opcode opargs")

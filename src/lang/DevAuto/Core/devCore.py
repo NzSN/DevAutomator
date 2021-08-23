@@ -1,7 +1,7 @@
 # DevCore is collection of fundamental objects in DevAuto.
 
 import typing as typ
-import DevAuto.Core.devCustomTypes as da_typ
+import DevAuto.Core.devCoreTypes as da_typ
 import DevAuto.Core.devCoreExcep as dcexcep
 from .devCoreTypes import opTuple, PropVal, opParameter, opRet, paraMatch
 
