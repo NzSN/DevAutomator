@@ -1,4 +1,6 @@
 import DevAuto as DA
+import DevAuto.Core.devCoreTypes as dtyp
+
 
 @DA.testcase
 def TC():
@@ -11,12 +13,12 @@ def TC():
 
     # This analysis is perform in python layer, and the result
     # will return to DA layer.
-    analysisResult = DA.ComplexAnalysisByRegex("a|b", result)
+    # analysisResult = DA.ComplexAnalysisByRegex("a|b", result)
 
-    if analysisResult is True:
-        return True
-    else:
-        return False
+    # if analysisResult is True:
+    #     return True
+    # else:
+    #     return False
 
 
 def TC1():
@@ -26,10 +28,20 @@ def TC1():
     a = GL8900T.numOfPorts()
     b = GL5610.numOfPorts()
 
-    c = a + b
-
     if a > b:
+        return True
+
+
+def TC2() -> None:
+    GL8900T = DA.Dut("PC1")
+
+    n = GL8900T.numOfPorts()
+    GL8900T.port_shutdown(n)
+
+    if n == dtyp.DA_Int(2):
         pass
+
+    return True
 
 
 def main():

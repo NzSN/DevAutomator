@@ -4,7 +4,7 @@ from Machine within DevCore.
 """
 
 import DevAuto.Core as core
-import DevAuto.Core.devCustomTypes as da_typ
+import DevAuto.Core.devCoreTypes as da_typ
 
 
 ###############################################################################
@@ -49,7 +49,13 @@ class BoxMachine(core.Machine):
 
     @core.Machine.Operation
     def open(self) -> core.Operation:
-        return core.Operation("core", "Box", core.opTuple("open", None))
+        self.operate(
+            core.Operation(
+                "core",
+                "Box",
+                core.opTuple("open", da_typ.DA_None, da_typ.DA_None)
+            )
+        )
 
     @core.Machine.Operation
     def close(self) -> core.Operation:

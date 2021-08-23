@@ -3,7 +3,7 @@
 import typing as typ
 import DevAuto.Core.devCustomTypes as da_typ
 import DevAuto.Core.devCoreExcep as dcexcep
-from .devCustomTypes import opTuple, PropVal, opParameter, opRet
+from .devCoreTypes import opTuple, PropVal, opParameter, opRet
 
 
 class Message:
@@ -181,7 +181,7 @@ class Machine:
         opRet = op.op().opret
 
         # Make sure return type of operation is correct
-        assert(issubclass(da_typ.DA_Type, opRet))
+        assert(issubclass(da_typ.DType, opRet))
 
         return opRet()
 
