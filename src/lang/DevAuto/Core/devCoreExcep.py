@@ -28,3 +28,11 @@ class PROP_VAL_TYPE_ERROR(Exception):
     def __str__(self) -> str:
         return self._propName + " does not support operation " \
             + self._op.__name__ + " ."
+
+
+class OP_WITH_INVALID_ARGS(Exception):
+    """
+    ...
+    """
+
+    pass

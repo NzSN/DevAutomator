@@ -1,9 +1,7 @@
 import typing as typ
 from collections import namedtuple
 
-opTuple = namedtuple("opTuple", "opcode opargs opret")
-opParameter = typ.Tuple[typ.Tuple[str, type]]
-opRet = opParameter
+
 PropVal = typ.Union[typ.List[str], typ.Mapping[str, str]]
 
 
@@ -57,3 +55,26 @@ class DNone(DType):
     def __init__(self) -> None:
         DType.__init__(self, None)
         self._value = None
+
+
+###############################################################################
+#                                  Operation                                   #
+###############################################################################
+# opargs :: opParameter
+opTuple = namedtuple("opTuple", "opcode opargs")
+opParameter = typ.Tuple[typ.Tuple[str, DType]]
+opRet = typ.Tuple[str, DType]
+
+
+def paraMatch(para1: opParameter, para2: opParameter) -> bool:
+    length = len(para1)
+    if length != len(para2):
+        return False
+
+    # If two parameter's type is equal then
+    # these two parameter is equal
+    for i in range(length):
+        if para1[i][1] != para2[i][1]:
+            return False
+
+    return True

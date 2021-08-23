@@ -29,13 +29,13 @@ boxProperties = [
 
 boxOpSpec = [
     # Open
-    core.OpSpec("open", (), None),
+    core.OpSpec("open", (), ("N/A", da_typ.DNone)),
     # Close
-    core.OpSpec("close", (), None),
+    core.OpSpec("close", (), ("N/A", da_typ.DNone)),
     # Put
-    core.OpSpec("put", (("Candy", str)), None),
+    core.OpSpec("put", (("Candy", da_typ.DSTR)), ("N/A", da_typ.DNone)),
     # Get
-    core.OpSpec("get", (), ("Candy", str))
+    core.OpSpec("get", (), ("Candy", da_typ.DSTR))
 ]
 
 
@@ -49,25 +49,37 @@ class BoxMachine(core.Machine):
 
     @core.Machine.Operation
     def open(self) -> core.Operation:
-        self.operate(
+        return self.operate(
             core.Operation(
                 "core",
                 "Box",
-                core.opTuple("open", da_typ.DA_None, da_typ.DA_None)
+                core.opTuple("open", ())
             )
         )
 
     @core.Machine.Operation
     def close(self) -> core.Operation:
-        return core.Operation("core", "Box", core.opTuple("close", None))
+        return self.operate(
+            core.Operation(
+                "core",
+                "Box",
+                core.opTuple("close", ())
+            )
+        )
 
     @core.Machine.Operation
     def put(self, candy: str) -> core.Operation:
-        return core.Operation("core", "Box", core.opTuple("put", candy))
+        return self.operate(
+            "core", "Box",
+            core.opTuple("put", ())
+        )
 
     @core.Machine.Operation
     def get(self) -> core.Operation:
-        return core.Operation("core", "Box", core.opTuple("get", None))
+        return self.operate(
+            "core", "Box",
+            core.opTuple("get", ())
+        )
 
 
 ###############################################################################

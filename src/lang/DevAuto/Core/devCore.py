@@ -3,7 +3,7 @@
 import typing as typ
 import DevAuto.Core.devCustomTypes as da_typ
 import DevAuto.Core.devCoreExcep as dcexcep
-from .devCoreTypes import opTuple, PropVal, opParameter, opRet
+from .devCoreTypes import opTuple, PropVal, opParameter, opRet, paraMatch
 
 
 class Message:
@@ -177,13 +177,24 @@ class Machine:
         theOp = [op.op()[0] == opcode for op in self._operations]
         return theOp != []
 
+    def getOpSpec(self, opcode: str) -> typ.Optional[OpSpec]:
+        spec = [s.opcode == opcode for s in self._operations]
+        if spec == []:
+            return None
+        else:
+            # There must only one element with the opcode
+            assert(len(spec) == 1)
+            return spec[0]
+
     def operate(self, op: Operation) -> any:
-        opRet = op.op().opret
+        opcode = op.op().opcode
+        spec = self.getOpSpec(opcode)
 
-        # Make sure return type of operation is correct
-        assert(issubclass(da_typ.DType, opRet))
+        # Operation arguments checking
+        if paraMatch(spec.parameter(), op.op().opargs) is False:
+            raise dcexcep.OP_WITH_INVALID_ARGS()
 
-        return opRet()
+        return spec.retVal()[1]()
 
     def operation(self, op: typ.Callable) -> typ.Callable:
         if not self.hasOperation(op.__name__):
