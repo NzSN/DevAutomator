@@ -38,7 +38,14 @@ def TC2() -> None:
     n = GL8900T.numOfPorts()
     GL8900T.port_shutdown(n)
 
-    if n == dtyp.DA_Int(2):
+    # such if statement need to be
+    # translated, then execute in DA layer.
+    if n == 2:
+        pass
+
+    m = n + 1
+
+    if m == 3:
         pass
 
     return True
