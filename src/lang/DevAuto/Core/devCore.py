@@ -1,9 +1,7 @@
 # DevCore is collection of fundamental objects in DevAuto.
-
 import typing as typ
-import DevAuto.Core.devCoreTypes as da_typ
 import DevAuto.Core.devCoreExcep as dcexcep
-from .devCoreTypes import opTuple, PropVal, opParameter, opRet, paraMatch
+from .devCoreTypes import opTuple, PropVal, opParameter, opRet, argsCheck
 
 
 class Message:
@@ -156,6 +154,11 @@ class OpSpec:
         return self._ret
 
 
+def opExists(opSpecs: typ.List[OpSpec], opcode: str) -> bool:
+    exists = [spec.opcode() == opcode for spec in opSpecs] != []
+    return exists
+
+
 class Machine:
     """
     An entity that able to perform operations and have
@@ -169,12 +172,15 @@ class Machine:
         self._properties = properties
         self._operations = operations
 
+    def ident(self) -> str:
+        return self._ident
+
     def hasProperty(self, pident: str) -> bool:
         theProperty = [pident == p for p in self._properties]
         return theProperty != []
 
     def hasOperation(self, opcode: str) -> bool:
-        theOp = [op.op()[0] == opcode for op in self._operations]
+        theOp = [op.opcode()[0] == opcode for op in self._operations]
         return theOp != []
 
     def getOpSpec(self, opcode: str) -> typ.Optional[OpSpec]:
@@ -191,15 +197,18 @@ class Machine:
         spec = self.getOpSpec(opcode)
 
         # Operation arguments checking
-        if paraMatch(spec.parameter(), op.op().opargs) is False:
+        if argsCheck(op.op().opargs, spec.parameter()) is False:
             raise dcexcep.OP_WITH_INVALID_ARGS()
 
         return spec.retVal()[1]()
 
-    def operation(self, op: typ.Callable) -> typ.Callable:
-        if not self.hasOperation(op.__name__):
-            # fixme: need to raise exception
-            raise dcexcep.MACHINE_OPERATION_NOT_DEFINED(
-                self._ident, op.__name__)
-        else:
-            return op
+    def operation(ident: str, specs: typ.List[OpSpec]) -> typ.Callable:
+        def decorate(op: typ.Callable) -> typ.Callable:
+            if not opExists(specs, op.__name__):
+                # fixme: need to raise exception
+                raise dcexcep.MACHINE_OPERATION_NOT_DEFINED(
+                    ident, op.__name__)
+            else:
+                return op
+
+        return decorate

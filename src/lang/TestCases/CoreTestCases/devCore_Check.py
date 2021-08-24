@@ -84,3 +84,85 @@ class PropertyAsDict_TC:
         for idx in range(2):
             port = ListProperty[idx]
             assert alterTo[idx] == DictProperty[port]
+
+
+###############################################################################
+#                              Machine TestCases                              #
+###############################################################################
+# Box Properties
+boxProperties = [
+    core.Property("contain", 10)
+]
+
+boxOpSpec = [
+    # Open
+    core.OpSpec("open", (), ("N/A", core.DNone)),
+    # Close
+    core.OpSpec("close", (), ("N/A", core.DNone)),
+    # Put
+    core.OpSpec("put", (("Candy", core.DStr)), ("N/A", core.DNone)),
+    # Get
+    core.OpSpec("get", (), ("Candy", core.DStr))
+]
+
+
+class BoxMachine(core.Machine):
+    """
+    A machine that can open and close, just like a box.
+    """
+
+    def __init__(self) -> None:
+        core.Machine.__init__(self, "Box", boxProperties, boxOpSpec)
+
+    @core.Machine.operation("BoxMachine", boxOpSpec)
+    def open(self) -> core.DNone:
+        return self.operate(
+            core.Operation(
+                "core",
+                "Box",
+                core.opTuple("open", [])
+            )
+        )
+
+    @core.Machine.operation("BoxMachine", boxOpSpec)
+    def close(self) -> core.DNone:
+        return self.operate(
+            core.Operation(
+                "core",
+                "Box",
+                core.opTuple("close", [])
+            )
+        )
+
+    @core.Machine.operation("BoxMachine", boxOpSpec)
+    def put(self, candy: str) -> core.DNone:
+        arg = core.DStr(candy)
+
+        return self.operate(
+            "core", "Box",
+            core.opTuple("put", [arg])
+        )
+
+    @core.Machine.operation("BoxMachine", boxOpSpec)
+    def get(self) -> core.DStr:
+        return self.operate(
+            "core", "Box",
+            core.opTuple("get", [])
+        )
+
+
+@pytest.fixture
+def boxMachine() -> core.Machine:
+    return BoxMachine()
+
+
+class Machine_TC:
+
+    def test_BoxMachineOpSpec(self, boxMachine) -> None:
+        assert boxMachine.hasOperation("open")
+        assert boxMachine.hasOperation("close")
+        assert boxMachine.hasOperation("put")
+        assert boxMachine.hasOperation("get")
+
+    def test_BoxMachineProperty(self, boxMachine) -> None:
+        pass
