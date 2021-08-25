@@ -100,7 +100,7 @@ boxOpSpec = [
     # Close
     core.OpSpec("close", (), ("N/A", core.DNone)),
     # Put
-    core.OpSpec("put", (("Candy", core.DStr)), ("N/A", core.DNone)),
+    core.OpSpec("put", (("Candy", core.DStr),), ("N/A", core.DNone)),
     # Get
     core.OpSpec("get", (), ("Candy", core.DStr))
 ]
@@ -139,15 +139,19 @@ class BoxMachine(core.Machine):
         arg = core.DStr(candy)
 
         return self.operate(
-            "core", "Box",
-            core.opTuple("put", [arg])
+            core.Operation(
+                "core", "Box",
+                core.opTuple("put", [arg])
+            )
         )
 
     @core.Machine.operation("BoxMachine", boxOpSpec)
     def get(self) -> core.DStr:
         return self.operate(
-            "core", "Box",
-            core.opTuple("get", [])
+            core.Operation(
+                "core", "Box",
+                core.opTuple("get", [])
+            )
         )
 
 
@@ -165,4 +169,52 @@ class Machine_TC:
         assert boxMachine.hasOperation("get")
 
     def test_BoxMachineProperty(self, boxMachine) -> None:
-        pass
+        assert boxMachine.hasProperty("contain")
+        assert boxMachine.hasProperty("connect") is False
+
+    def test_BoxMachineOperation(self, boxMachine) -> None:
+        assert type(boxMachine.open()) == core.DNone
+        assert type(boxMachine.close()) == core.DNone
+        assert type(boxMachine.put("123")) == core.DNone
+        assert type(boxMachine.get()) == core.DStr
+
+
+###############################################################################
+#                               OpSpec TestCases                              #
+###############################################################################
+@pytest.fixture
+def spec1() -> core.OpSpec:
+    return core.OpSpec(
+        "SP1",
+        (("A1", core.DInt), ("A2", core.DStr)),
+        ("R", core.DStr))
+
+
+@pytest.fixture
+def spec2() -> core.OpSpec:
+    return core.OpSpec(
+        "SP2",
+        (("A1", core.DStr), ("A2", core.DStr)),
+        ("R", core.DStr))
+
+
+@pytest.fixture
+def spec3() -> core.OpSpec:
+    return core.OpSpec(
+        "SP3",
+        (("A3", core.DInt), ("A4", core.DStr)),
+        ("R", core.DStr))
+
+
+class OpSpec_TC:
+
+    def test_OpSpecEq(self, spec1, spec2, spec3) -> None:
+        spec4 = spec1
+        assert spec1 == spec4
+        assert spec1 != spec2
+        assert spec1 != spec3
+
+    def test_OpSpecBasicOp(self, spec1) -> None:
+        assert spec1.opcode() == "SP1"
+        assert spec1.parameter() == (("A1", core.DInt), ("A2", core.DStr))
+        assert spec1.retVal() == ("R", core.DStr)

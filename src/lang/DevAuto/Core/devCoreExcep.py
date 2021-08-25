@@ -36,3 +36,17 @@ class OP_WITH_INVALID_ARGS(Exception):
     """
 
     pass
+
+
+class OP_SPEC_NOT_FOUND(Exception):
+    """
+    Operation's specification can not be found within
+    a machine
+    """
+
+    def __init__(self, machine: str, op: str) -> None:
+        self._machine = machine
+        self._op = op
+
+    def __str__(self) -> str:
+        return self._op + " is not supported by machine " + self._machine

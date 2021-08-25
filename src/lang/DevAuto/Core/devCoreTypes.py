@@ -20,7 +20,7 @@ class DType:
 
 class DInt(DType):
 
-    def __init__(self, value: int) -> None:
+    def __init__(self, value: int = 0) -> None:
         DType.__init__(self, int)
         self._value = value
 
@@ -51,21 +51,32 @@ class DInt(DType):
     def __rmul__(self, o) -> 'DInt':
         return self.__mul__(o)
 
+    def __str__(self) -> str:
+        return str(self._value)
+
 
 class DStr(DType):
 
-    def __init__(self, value: str) -> None:
+    def __init__(self, value: str = "") -> None:
         DType.__init__(self, str)
         self._value = value
 
     def __str__(self) -> str:
         return self._value
 
+    def __eq__(self, o: typ.Union['DStr', str]) -> bool:
+        if type(o).__name__ == 'str':
+            return self._value == o
+        else:
+            return self._value == o.value()
+
 
 class DList(DType):
 
-    def __init__(self, value: typ.List) -> None:
+    def __init__(self, value: typ.List = None) -> None:
         DType.__init__(self, list)
+        if value is None:
+            value = []
         self._value = value
 
     def __getitem__(self, index: int) -> typ.Any:
@@ -86,8 +97,10 @@ class DList(DType):
 
 class DDict(DType):
 
-    def __init__(self, value: typ.Dict) -> None:
+    def __init__(self, value: typ.Dict = None) -> None:
         DType.__init__(self, dict)
+        if value is None:
+            value = {}
         self._value = value
 
     def __getitem__(self, index: int) -> typ.Any:
@@ -108,8 +121,10 @@ class DDict(DType):
 
 class DTuple(DType):
 
-    def __init__(self, value: typ.Tuple) -> None:
+    def __init__(self, value: typ.Tuple = None) -> None:
         DType.__init__(self, tuple)
+        if value is None:
+            value = ()
         self._value = value
 
     def __getitem__(self, index: int) -> typ.Any:

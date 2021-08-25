@@ -40,7 +40,9 @@ class Operation(Message):
         self._op = op
 
         # Build up operation content
-        content = op[0] + "::" + op[1]
+        # First convert DStr to str
+        opArgStr = [str(arg) for arg in op[1]]
+        content = op[0] + "::" + "::".join(opArgStr)
 
         Message.__init__(self, source, dest, content)
 
@@ -104,6 +106,9 @@ class Property:
     def __init__(self, p: str, propval: PropVal) -> None:
         self._property = p
         self._propVal = propval
+
+    def name(self) -> str:
+        return self._property
 
     def __getitem__(self, index: typ.Union[int, str]) -> str:
         self._propIndexArgCheck(index)
@@ -176,7 +181,9 @@ class Machine:
         return self._ident
 
     def hasProperty(self, pident: str) -> bool:
-        theProperty = [pident == p for p in self._properties]
+        theProperty = [
+            p for p in self._properties if p.name() == pident
+        ]
         return theProperty != []
 
     def hasOperation(self, opcode: str) -> bool:
@@ -184,7 +191,7 @@ class Machine:
         return theOp != []
 
     def getOpSpec(self, opcode: str) -> typ.Optional[OpSpec]:
-        spec = [s.opcode == opcode for s in self._operations]
+        spec = [s for s in self._operations if s.opcode() == opcode]
         if spec == []:
             return None
         else:
@@ -195,6 +202,10 @@ class Machine:
     def operate(self, op: Operation) -> any:
         opcode = op.op().opcode
         spec = self.getOpSpec(opcode)
+
+        if spec is None:
+            raise dcexcep.OP_SPEC_NOT_FOUND(
+                self._ident, op.op().opcode)
 
         # Operation arguments checking
         if argsCheck(op.op().opargs, spec.parameter()) is False:
