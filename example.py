@@ -33,22 +33,17 @@ def TC1():
 
 
 def TC2() -> None:
-    GL8900T = DA.Dut("PC1")
+    GL8900T = DA.Dut("GL8900")
+    PC1 = DA.Dut("PC1")
 
-    n = GL8900T.numOfPorts()
-    GL8900T.port_shutdown(n)
+    ret = GL8900T.serial("shutdown 0/1")
+    ret = GL8900T.serial("port status")
+    ps = core.regex("0/1", ret)
 
-    # such if statement need to be
-    # translated, then execute in DA layer.
-    if n == 2:
-        pass
-
-    m = n + 1
-
-    if m == 3:
-        pass
-
-    return True
+    if ps == "down":
+        return True
+    else:
+        return False
 
 
 def main():
