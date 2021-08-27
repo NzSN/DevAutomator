@@ -137,6 +137,8 @@ DictEntry * dictEntryFind(DictEntry *ent, void *key, DictType *dt) {
         }
         current = current->next;
     }
+
+    return NULL;
 }
 
 void dictEntryRelease(DictEntry *ent, DictType *dt) {

@@ -24,7 +24,7 @@ typedef struct ListIter {
     int direction;
 } ListIter;
 
-/* List functions  s macros */
+/* List functions macros */
 #define listFirst(l) ((l)->head)
 #define listTail(l) ((l)->tail)
 #define listPrevNode(ln) ((ln)->prev)

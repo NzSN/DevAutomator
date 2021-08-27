@@ -6,7 +6,9 @@ prog :: stmts;
 
 stmts :: stmt stmts; stmt;
 
-stmt :: Condjmp Exp Num Num
+Instruction :: opcode arg1, arg2, ..., ret
+
+stmt :: Condjmp expr True_Line False_Line
         Assign Var Stmt
         Exp
 

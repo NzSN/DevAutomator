@@ -34,7 +34,6 @@ def TC1():
 
 def TC2() -> None:
     GL8900T = DA.Dut("GL8900")
-    PC1 = DA.Dut("PC1")
 
     ret = GL8900T.serial("shutdown 0/1")
     ret = GL8900T.serial("port status")
