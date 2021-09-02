@@ -10,7 +10,7 @@ PropVal = typ.Union[typ.List[str], typ.Mapping[str, str]]
 ###############################################################################
 class DType:
 
-    def __init__(self, t: typ.Union[type, None]) -> None:
+    def __init__(self, t: typ.Union[type, None] = None) -> None:
         self._origin = t
         self._value = None  # type: typ.Any
 
@@ -28,22 +28,22 @@ class DInt(DType):
         return self._value
 
     def __add__(self, other: typ.Union['DInt', int]) -> 'DInt':
-        if type(other).__name__ == 'int':
+        if isinstance(other, int):
             return DInt(self._value + other)
         else:
-            return DInt(self._value + other.value())
+            return DInt(self._value + other.value())  # type: ignore
 
     def __radd__(self, other: typ.Union['DInt', int]) -> 'DInt':
         return self.__add__(other)
 
     def __eq__(self, o: typ.Union['DInt', int]) -> bool:
-        if type(o).__name__ == 'int':
+        if isinstance(o, int):
             return self._value == o
         else:
             return self._value == o.value()
 
     def __mul__(self, o: typ.Union['DInt', int]) -> 'DInt':
-        if type(o).__name__ == 'int':
+        if isinstance(o, int):
             return DInt(self._value * o)
         else:
             return DInt(self._value * o.value())
@@ -65,7 +65,7 @@ class DStr(DType):
         return self._value
 
     def __eq__(self, o: typ.Union['DStr', str]) -> bool:
-        if type(o).__name__ == 'str':
+        if isinstance(o, str):
             return self._value == o
         else:
             return self._value == o.value()
@@ -92,7 +92,7 @@ class DList(DType):
         """
 
     def __eq__(self, o) -> bool:
-        pass
+        return True
 
 
 class DDict(DType):
@@ -116,7 +116,7 @@ class DDict(DType):
         """
 
     def __eq__(self, o) -> bool:
-        pass
+        return True
 
 
 class DTuple(DType):
@@ -141,7 +141,7 @@ class DNone(DType):
         self._value = None
 
     def __eq__(self, o) -> bool:
-        pass
+        return True
 
 
 ###############################################################################

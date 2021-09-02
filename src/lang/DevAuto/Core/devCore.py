@@ -69,7 +69,7 @@ class Config(Operation):
     config_indicater = "cfg"
 
     def __init__(self, source: str, dest: str,
-                 op: typ.Tuple[str]) -> None:
+                 op: opTuple) -> None:
         Operation.__init__(self, source, dest, op)
 
         # Append config indicater to tail of operation
@@ -110,13 +110,15 @@ class Property:
     def name(self) -> str:
         return self._property
 
-    def __getitem__(self, index: typ.Union[int, str]) -> str:
-        self._propIndexArgCheck(index)
-        return self._propVal[index]
+    def __getitem__(self, key: typ.Union[int, str]) -> str:
+        if self._propIndexArgCheck(key) is False:
+            dcexcep.PROP_VAL_TYPE_ERROR(self._property, self.__getitem__)
+        return self._propVal[key]  # type: ignore
 
     def __setitem__(self, key: typ.Union[int, str], value: str) -> None:
-        self._propIndexArgCheck(key)
-        self._propVal[key] = value
+        if self._propIndexArgCheck(key) is False:
+            dcexcep.PROP_VAL_TYPE_ERROR(self._property, self.__setitem__)
+        self._propVal[key] = value  # type: ignore
 
     def __eq__(self, property: 'Property') -> bool:
         return (self._property, self._propVal) == \
@@ -129,10 +131,11 @@ class Property:
         typeOfProp = type(self._propVal).__name__
         indexType = type(idxArg).__name__
 
-        if (typeOfProp == "dict" and indexType != "str") or \
-           (typeOfProp == "list" and indexType != "int"):
-            raise dcexcep.PROP_VAL_TYPE_ERROR(self._property, self.__getitem__)
-
+        if (typeOfProp == "dict" and indexType == "str") or \
+           (typeOfProp == "list" and indexType == "int"):
+            return True
+        else:
+            return False
 
 class OpSpec:
     """
@@ -199,7 +202,7 @@ class Machine:
             assert(len(spec) == 1)
             return spec[0]
 
-    def operate(self, op: Operation) -> any:
+    def operate(self, op: Operation) -> typ.Any:
         opcode = op.op().opcode
         spec = self.getOpSpec(opcode)
 
@@ -211,8 +214,9 @@ class Machine:
         if argsCheck(op.op().opargs, spec.parameter()) is False:
             raise dcexcep.OP_WITH_INVALID_ARGS()
 
-        return spec.retVal()[1]()
+        return spec.retVal()[1].__init__()
 
+    @staticmethod
     def operation(ident: str, specs: typ.List[OpSpec]) -> typ.Callable:
         def decorate(op: typ.Callable) -> typ.Callable:
             if not opExists(specs, op.__name__):
