@@ -1,8 +1,7 @@
 # DevCore is collection of fundamental objects in DevAuto.
 import typing as typ
 import DevAuto.Core.devCoreExcep as dcexcep
-from .devCoreTypes import opTuple, PropVal, opParameter, opRet, argsCheck,\
-    DType
+from .devCoreTypes import opTuple, PropVal, opParameter, opRet, argsCheck
 
 
 class Message:
@@ -219,7 +218,8 @@ class Machine:
 
     @staticmethod
     def operation(ident: str, specs: typ.List[OpSpec]) -> typ.Callable:
-        def decorate(op: typ.Callable) -> typ.Callable:
+
+        def spec_check(op: typ.Callable) -> typ.Callable:
             if not opExists(specs, op.__name__):
                 # fixme: need to raise exception
                 raise dcexcep.MACHINE_OPERATION_NOT_DEFINED(
@@ -227,4 +227,4 @@ class Machine:
             else:
                 return op
 
-        return decorate
+        return spec_check
