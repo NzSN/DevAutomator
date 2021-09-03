@@ -1,7 +1,8 @@
 # DevCore is collection of fundamental objects in DevAuto.
 import typing as typ
 import DevAuto.Core.devCoreExcep as dcexcep
-from .devCoreTypes import opTuple, PropVal, opParameter, opRet, argsCheck
+from .devCoreTypes import opTuple, PropVal, opParameter, opRet, argsCheck,\
+    DType
 
 
 class Message:
@@ -214,7 +215,7 @@ class Machine:
         if argsCheck(op.op().opargs, spec.parameter()) is False:
             raise dcexcep.OP_WITH_INVALID_ARGS()
 
-        return spec.retVal()[1].__init__()
+        return spec.retVal()[1]()
 
     @staticmethod
     def operation(ident: str, specs: typ.List[OpSpec]) -> typ.Callable:
