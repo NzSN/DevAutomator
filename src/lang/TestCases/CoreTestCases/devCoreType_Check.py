@@ -9,8 +9,8 @@ import typing as typ
 @pytest.fixture
 def parameter_pair_diff() -> typ.Tuple[core.opParameter, core.opParameter]:
     return (
-        (("P1", core.DInt), ("P2", core.DStr), ("P3", core.DList)),
-        (("P1", core.DStr), ("P2", core.DInt), ("P3", core.DDict))
+        [("P1", core.DInt), ("P2", core.DStr), ("P3", core.DList)],
+        [("P1", core.DStr), ("P2", core.DInt), ("P3", core.DDict)]
     )
 
 
@@ -18,16 +18,16 @@ def parameter_pair_diff() -> typ.Tuple[core.opParameter, core.opParameter]:
 def parameter_pair_diff_length() -> \
         typ.Tuple[core.opParameter, core.opParameter]:
     return (
-        (("P1", core.DInt), ("P2", core.DStr), ("P3", core.DList)),
-        (("P1", core.DInt), ("P2", core.DStr))
+        [("P1", core.DInt), ("P2", core.DStr), ("P3", core.DList)],
+        [("P1", core.DInt), ("P2", core.DStr)]
     )
 
 
 @pytest.fixture
 def parameter_pair_equal() -> typ.Tuple[core.opParameter, core.opParameter]:
     return (
-        (("P1", core.DInt), ("P2", core.DStr), ("P3", core.DList)),
-        (("P1", core.DInt), ("P2", core.DStr), ("P3", core.DList))
+        [("P1", core.DInt), ("P2", core.DStr), ("P3", core.DList)],
+        [("P1", core.DInt), ("P2", core.DStr), ("P3", core.DList)]
     )
 
 
@@ -35,8 +35,8 @@ def parameter_pair_equal() -> typ.Tuple[core.opParameter, core.opParameter]:
 def parameter_pair_equal_name_diff() -> \
         typ.Tuple[core.opParameter, core.opParameter]:
     return (
-        (("P0", core.DInt), ("P3", core.DStr), ("P4", core.DList)),
-        (("P1", core.DInt), ("P2", core.DStr), ("P3", core.DList))
+        [("P0", core.DInt), ("P3", core.DStr), ("P4", core.DList)],
+        [("P1", core.DInt), ("P2", core.DStr), ("P3", core.DList)]
     )
 
 
@@ -65,7 +65,7 @@ class OperationParameter_TC:
 def arg_para_match() -> typ.Tuple[typ.List[core.DType], core.opParameter]:
     return (
         [core.DInt(0), core.DStr("Hello")],
-        (("", core.DInt), ("", core.DStr))
+        [("", core.DInt), ("", core.DStr)]
     )
 
 
@@ -73,7 +73,7 @@ def arg_para_match() -> typ.Tuple[typ.List[core.DType], core.opParameter]:
 def arg_para_diff() -> typ.Tuple[typ.List[core.DType], core.opParameter]:
     return (
         [core.DStr("Hey"), core.DStr("Hello")],
-        (("", core.DInt), ("", core.DStr))
+        [("", core.DInt), ("", core.DStr)]
     )
 
 
@@ -82,7 +82,7 @@ def arg_para_difflength() -> \
         typ.Tuple[typ.List[core.DType], core.opParameter]:
     return (
         [core.DInt(0)],
-        (("", core.DInt), ("", core.DStr))
+        [("", core.DInt), ("", core.DStr)]
     )
 
 

@@ -1,5 +1,6 @@
 import pytest
 import DevAuto.Core as core
+import DevAuto.Core.devCoreTypes as dtyp
 
 
 ###############################################################################
@@ -23,7 +24,7 @@ class Message_TC:
 ###############################################################################
 @pytest.fixture
 def trivialOP() -> core.Operation:
-    return core.Operation("S", "D", ("OP", "ARG"))
+    return core.Operation("S", "D", dtyp.opTuple("OP", "ARG"))
 
 
 class Operation_TC:
@@ -91,18 +92,18 @@ class PropertyAsDict_TC:
 ###############################################################################
 # Box Properties
 boxProperties = [
-    core.Property("contain", 10)
+    core.Property("contain", ["10"])
 ]
 
 boxOpSpec = [
     # Open
-    core.OpSpec("open", (), ("N/A", core.DNone)),
+    core.OpSpec("open", [], ("N/A", core.DType)),
     # Close
-    core.OpSpec("close", (), ("N/A", core.DNone)),
+    core.OpSpec("close", [], ("N/A", core.DNone)),
     # Put
-    core.OpSpec("put", (("Candy", core.DStr),), ("N/A", core.DNone)),
+    core.OpSpec("put", [("Candy", core.DStr)], ("N/A", core.DNone)),
     # Get
-    core.OpSpec("get", (), ("Candy", core.DStr))
+    core.OpSpec("get", [], ("Candy", core.DStr))
 ]
 
 
@@ -173,10 +174,10 @@ class Machine_TC:
         assert boxMachine.hasProperty("connect") is False
 
     def test_BoxMachineOperation(self, boxMachine) -> None:
-        assert type(boxMachine.open()) == core.DNone
-        assert type(boxMachine.close()) == core.DNone
-        assert type(boxMachine.put("123")) == core.DNone
-        assert type(boxMachine.get()) == core.DStr
+        assert boxMachine.open() == core.DNone()
+        assert boxMachine.close() == core.DNone()
+        assert boxMachine.put("123") == core.DNone()
+        assert boxMachine.get() == core.DStr()
 
 
 ###############################################################################
@@ -186,7 +187,7 @@ class Machine_TC:
 def spec1() -> core.OpSpec:
     return core.OpSpec(
         "SP1",
-        (("A1", core.DInt), ("A2", core.DStr)),
+        [("A1", core.DInt), ("A2", core.DStr)],
         ("R", core.DStr))
 
 
@@ -194,7 +195,7 @@ def spec1() -> core.OpSpec:
 def spec2() -> core.OpSpec:
     return core.OpSpec(
         "SP2",
-        (("A1", core.DStr), ("A2", core.DStr)),
+        [("A1", core.DStr), ("A2", core.DStr)],
         ("R", core.DStr))
 
 
@@ -202,7 +203,7 @@ def spec2() -> core.OpSpec:
 def spec3() -> core.OpSpec:
     return core.OpSpec(
         "SP3",
-        (("A3", core.DInt), ("A4", core.DStr)),
+        [("A3", core.DInt), ("A4", core.DStr)],
         ("R", core.DStr))
 
 
@@ -216,5 +217,5 @@ class OpSpec_TC:
 
     def test_OpSpecBasicOp(self, spec1) -> None:
         assert spec1.opcode() == "SP1"
-        assert spec1.parameter() == (("A1", core.DInt), ("A2", core.DStr))
+        assert spec1.parameter() == [("A1", core.DInt), ("A2", core.DStr)]
         assert spec1.retVal() == ("R", core.DStr)

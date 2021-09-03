@@ -1,3 +1,4 @@
+import abc
 import typing as typ
 from collections import namedtuple
 
@@ -8,7 +9,7 @@ PropVal = typ.Union[typ.List[str], typ.Mapping[str, str]]
 ###############################################################################
 #                                   DA Types                                  #
 ###############################################################################
-class DType:
+class DType(abc.ABC):
 
     def __init__(self, t: typ.Union[type, None] = None) -> None:
         self._origin = t
@@ -149,8 +150,8 @@ class DNone(DType):
 ###############################################################################
 # opargs :: typ.Tuple[DType]
 opTuple = namedtuple("opTuple", "opcode opargs")
-opParameter = typ.Tuple[typ.Tuple[str, DType]]
-opRet = typ.Tuple[str, DType]
+opParameter = typ.List[typ.Tuple[str, typ.Type[DType]]]
+opRet = typ.Tuple[str, typ.Type[DType]]
 
 
 def argsCheck(opargs: typ.List[DType], para: opParameter) -> bool:
