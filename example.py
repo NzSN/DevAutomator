@@ -31,7 +31,7 @@ def TC1():
     if a > b:
         return True
 
-
+@DA.function
 def TC2() -> None:
     GL8900T = DA.Dut("GL8900")
 
