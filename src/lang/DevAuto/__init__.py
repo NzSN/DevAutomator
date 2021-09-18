@@ -1,1 +1,1 @@
-from .lang_imp import function
+from .lang_imp import function, DFunc
