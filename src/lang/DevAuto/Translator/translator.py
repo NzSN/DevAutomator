@@ -64,13 +64,29 @@ class DA_NodeTransPreCheck(ast.NodeTransformer):
     Do prechecking to ast nodes of DFunc
     """
 
-    def visit_Expr(self, ) -> None:
-        """
-        Transform into components of DA into intermidate form.
-        """
-
 
 class DA_NodeTransTransform(ast.NodeTransformer):
     """
     Do transfromations to ast nodes of DFunc
     """
+
+    def visit_For(self, node) -> None:
+        pass
+
+    def visit_While(self, node) -> None:
+        pass
+
+    def visit_If(self, node) -> None:
+        pass
+
+    def visit_Return(self, node) -> None:
+        pass
+
+    def visit_BinOp(self, node) -> None:
+        pass
+
+    def visit_Compare(self, node) -> None:
+        pass
+
+    def visit_Assign(self, node) -> None:
+        pass

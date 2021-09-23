@@ -135,3 +135,14 @@ class DInt_TC:
         assert i1 == 0
         assert i1 != 2
         assert 0 == i1
+
+
+@pytest.fixture
+def DListInstance() -> core.DList:
+    return core.DList()
+
+
+class DList_TC:
+
+    def test_(self, DListInstance) -> None:
+        l = DListInstance

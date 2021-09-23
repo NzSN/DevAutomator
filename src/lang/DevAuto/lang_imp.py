@@ -2,6 +2,8 @@ import functools
 import typing as typ
 import DevAuto.Core as core
 
+T = typ.TypeVar("T")
+
 
 class DFunc:
     """
@@ -16,6 +18,7 @@ class DFunc:
     def body(self) -> typ.Callable:
         return self._func
 
+
 class DIf:
     """
     IF statement of DevAuto.
@@ -25,6 +28,12 @@ class DIf:
 class DWhile:
     """
     While statement of DevAuto
+    """
+
+
+class DFor:
+    """
+    For statement of DevAuto
     """
 
 
@@ -64,7 +73,7 @@ class OInst(Inst):
     OPER_INST = "OInst"
 
     def __init__(self, opcode: str,
-                 args: typ.List[core.DStr],
+                 args: core.DList[core.DStr],
                  ret: core.DStr) -> None:
 
         Inst.__init__(self, self.OPER_INST)
@@ -75,11 +84,47 @@ class OInst(Inst):
     def opcode(self) -> str:
         return self._opcode
 
-    def args(self) -> typ.List[core.DStr]:
+    def args(self) -> core.DList:
         return self._args
 
     def ret(self) -> core.DStr:
         return self._ret
+
+
+class VInst(Inst):
+
+    VAR_OP_INST = "VInst"
+
+    def __init__(self, l: typ.Union[str, Var], r: typ.Union[str, Var]) -> None:
+        Inst.__init__(self, self.VAR_OP_INST)
+        self._l = l
+        self._r = r
+
+    def loperand(self) -> typ.Union[str, Var] :
+        return self._l
+
+    def roperand(self) -> typ.Union[str, Var]:
+        return self._r
+
+
+class Term(Inst):
+
+    TERM_INST = "TERM"
+
+    def __init__(self) -> None:
+        Inst.__init__(self, self.TERM_INST)
+
+
+class Success(Term):
+
+    def __init__(self) -> None:
+        Term.__init__(self)
+
+
+class Fail(Term):
+
+    def __init__(self) -> None:
+        Term.__init__(self)
 
 
 class Jmp(CInst):
@@ -94,6 +139,18 @@ class Jmp(CInst):
 
     def to(self) -> core.DInt:
         return self._to
+
+
+class Op(OInst):
+
+    def __init__(self, opcode: str, args: core.DList[core.DStr], ret: core.DStr) -> None:
+        OInst.__init__(self, opcode, args, ret)
+
+
+class Equal(VInst):
+
+    def __init__(self, l: typ.Union[str, Var], r: typ.Union[str, Var]) -> None:
+        VInst.__init__(self, l, r)
 
 
 def function(t: typ.Callable) -> DFunc:

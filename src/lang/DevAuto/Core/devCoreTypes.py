@@ -1,6 +1,6 @@
 import abc
 import typing as typ
-from collections import namedtuple
+from collections import namedtuple, MutableSequence
 
 
 PropVal = typ.Union[typ.List[str], typ.Mapping[str, str]]
@@ -72,10 +72,17 @@ class DStr(DType):
             return self._value == o.value()
 
 
-class DList(DType):
+DListElemType = typ.TypeVar('DListElemType')
 
-    def __init__(self, value: typ.List = None) -> None:
+
+class DList(DType,
+            typ.Generic[DListElemType],
+            MutableSequence):
+
+    def __init__(self, value: typ.List[DListElemType] = None) -> None:
+        MutableSequence.__init__(self)
         DType.__init__(self, list)
+
         if value is None:
             value = []
         self._value = value
@@ -85,15 +92,34 @@ class DList(DType):
         This method no need to do any real operation, it just a description
         that to say get something from DList
         """
+        return None
 
-    def __setitem__(self, key: int, value: typ.Any) -> None:
+    def __setitem__(self, key: int, value: DListElemType) -> None:
         """
         This method no need to do any real operation, it just a description
         that to say set something from DList
         """
+        return None
+
+    def __delitem__(self, key: int) -> None:
+        return None
 
     def __eq__(self, o) -> bool:
         return True
+
+    def __contains__(self, x: DListElemType) -> bool:
+        return True
+
+    def __iter__(self) -> typ.Iterator[DListElemType]:
+        """
+        Pending
+        """
+
+    def __len__(self) -> int:
+        return 0
+
+    def insert(self, index: int, value: DListElemType) -> None:
+        return None
 
 
 class DDict(DType):
@@ -143,6 +169,16 @@ class DNone(DType):
 
     def __eq__(self, o) -> bool:
         return True
+
+
+class DBool(DType):
+
+    def __init__(self, value: bool) -> None:
+        DType.__init__(self, bool)
+        self._value = value
+
+    def __bool__(self) -> bool:
+        return self._value
 
 
 ###############################################################################
