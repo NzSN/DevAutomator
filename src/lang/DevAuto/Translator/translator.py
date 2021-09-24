@@ -1,7 +1,14 @@
 import ast
 import inspect
 import typing as typ
+
+from _pytest.fixtures import FuncFixtureInfo
+import DevAuto.Core as core
 from DevAuto.lang_imp import DFunc, Inst
+
+
+# Debugging
+import astpretty
 
 
 class Translator:
@@ -25,6 +32,7 @@ class Translator:
                 args = [],
                 keywords = []))
         ast_nodes.body.append(expr)
+        ast.fix_missing_locations(ast_nodes)
 
         # Transform from ast to List[Inst]
         target_insts = []
@@ -65,6 +73,17 @@ class DA_NodeTransPreCheck(ast.NodeTransformer):
     """
 
 
+def _da_expr_convert(insts: typ.List[Inst], o: object) -> typ.Any:
+    """
+    Convert DaObj into insts. If o is a PyObj then do nothing
+    and the PyObj directly.
+    """
+    if isinstance(o, core.DaObj):
+        pass
+    else:
+        return o
+
+
 class DA_NodeTransTransform(ast.NodeTransformer):
     """
     Do transfromations to ast nodes of DFunc
@@ -88,5 +107,17 @@ class DA_NodeTransTransform(ast.NodeTransformer):
     def visit_Compare(self, node) -> None:
         pass
 
-    def visit_Assign(self, node) -> None:
+    def visit_Assign(self, node: ast.Assign) -> None:
+        node.value = ast.Call(
+            func = ast.Name(id = "_da_expr_convert", ctx = ast.Load()),
+            args = [
+                ast.Name(id = "insts", ctx = ast.Load()),
+                node.value
+            ],
+            keywords = []
+        )
+        ast.fix_missing_locations(node)
+        astpretty.pprint(node)
+
+    def visit_Attribute(self, node) -> None:
         pass

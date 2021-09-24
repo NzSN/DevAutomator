@@ -22,7 +22,6 @@ class BoxMachinePlus(BoxMachine):
         )
 
 
-
 @DA.function
 def trivialTest() -> bool:
     box = BoxMachinePlus()

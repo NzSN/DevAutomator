@@ -3,8 +3,21 @@ import typing as typ
 import DevAuto.Core.devCoreExcep as dcexcep
 from .devCoreTypes import opTuple, PropVal, opParameter, opRet, argsCheck
 
+class DaObj(object):
 
-class Message:
+    def __init__(self) -> None: ...
+
+
+class DelayObj(DaObj):
+    """
+    Objects that unable to be computed in Python layer need to delay to DA
+    layer.
+    """
+
+    def __init__(self) -> None: ...
+
+
+class Message(DelayObj):
     """
     Communication unit between DaCore and Executors, Duts. All
     things between DACore and Executors, Duts are Messages.
@@ -167,7 +180,7 @@ def opExists(opSpecs: typ.List[OpSpec], opcode: str) -> bool:
     return exists
 
 
-class Machine:
+class Machine(DaObj):
     """
     An entity that able to perform operations and have
     some properties. To specify a more concrete machine by
