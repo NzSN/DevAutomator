@@ -6,12 +6,38 @@ from _pytest.fixtures import FuncFixtureInfo
 import DevAuto.Core as core
 from DevAuto.lang_imp import DFunc, Inst
 
-
-# Debugging
+# Debugging purposes
 import astpretty
 
 
+
+
+
 class Translator:
+
+    def preprocessing(self, tree: ast.Module, info: typ.List) -> ast.AST:
+
+        funName = info[0]
+
+        # Add Insts :: List[Inst] as an arg
+        # Insts is used to hold all Insts that equal
+        # to the DFunc.
+        funcdef = tree.body[0]
+        assert(isinstance(funcdef, ast.FunctionDef))
+        funcdef.args.args.append(ast.arg(arg="insts"))
+
+        # Append a call expr
+        # without this expr the pyfunc will not be executed
+        # in exec()
+        expr = ast.Expr(
+            ast.Call(
+                func = ast.Name(id=funName, ctx=ast.Load()),
+                args = [],
+                keywords = []))
+        tree.body.append(expr)
+        ast.fix_missing_locations(tree)
+
+        return tree
 
     def trans(self, func: DFunc) -> typ.List[Inst]:
         """
@@ -19,24 +45,16 @@ class Translator:
         """
         pyfunc = func.body()
 
+        target_insts = []
+        global_env, loc_env = {}, { "insts": target_insts }
+
         # Transform AST nodes
         ast_nodes = ast.parse(inspect.getsource(pyfunc))
         DA_NodeTransformer().visit(ast_nodes)
 
-        # Append a call expr
-        # without this expr the pyfunc will not be executed
-        # in exec()
-        expr = ast.Expr(
-            ast.Call(
-                func = ast.Name(id=pyfunc.__name__, ctx=ast.Load()),
-                args = [],
-                keywords = []))
-        ast_nodes.body.append(expr)
-        ast.fix_missing_locations(ast_nodes)
+        self.preprocessing(ast_nodes, [pyfunc.__name__])
 
         # Transform from ast to List[Inst]
-        target_insts = []
-        global_env, loc_env = {}, { "insts": target_insts }
         exec(compile(ast_nodes, "", 'exec'),
              global_env,
              loc_env)
@@ -89,25 +107,25 @@ class DA_NodeTransTransform(ast.NodeTransformer):
     Do transfromations to ast nodes of DFunc
     """
 
-    def visit_For(self, node) -> None:
-        pass
+    def visit_For(self, node):
+        return node
 
-    def visit_While(self, node) -> None:
-        pass
+    def visit_While(self, node):
+        return node
 
-    def visit_If(self, node) -> None:
-        pass
+    def visit_If(self, node):
+        return node
 
-    def visit_Return(self, node) -> None:
-        pass
+    def visit_Return(self, node):
+        return node
 
-    def visit_BinOp(self, node) -> None:
-        pass
+    def visit_BinOp(self, node):
+        return node
 
-    def visit_Compare(self, node) -> None:
-        pass
+    def visit_Compare(self, node):
+        return node
 
-    def visit_Assign(self, node: ast.Assign) -> None:
+    def visit_Assign(self, node: ast.Assign) -> ast.Assign:
         node.value = ast.Call(
             func = ast.Name(id = "_da_expr_convert", ctx = ast.Load()),
             args = [
@@ -117,7 +135,8 @@ class DA_NodeTransTransform(ast.NodeTransformer):
             keywords = []
         )
         ast.fix_missing_locations(node)
-        astpretty.pprint(node)
 
-    def visit_Attribute(self, node) -> None:
-        pass
+        return node
+
+    def visit_Attribute(self, node):
+        return node

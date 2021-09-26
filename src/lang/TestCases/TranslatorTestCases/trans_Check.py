@@ -36,6 +36,7 @@ def trivialTest() -> bool:
     if things == "candy":
         return True
 
+    return False
 
 @pytest.fixture
 def Tr() -> trans.Translator:

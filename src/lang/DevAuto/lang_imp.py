@@ -95,7 +95,7 @@ class VInst(Inst):
 
     VAR_OP_INST = "VInst"
 
-    def __init__(self, l: typ.Union[str, Var], r: typ.Union[str, Var]) -> None:
+    def __init__(self, l: typ.Union[str, Var], r:typ.Union[str, Var]) -> None:
         Inst.__init__(self, self.VAR_OP_INST)
         self._l = l
         self._r = r
