@@ -22,7 +22,7 @@ class BoxMachinePlus(BoxMachine):
         )
 
 
-@DA.function
+@DA.function(globals())
 def trivialTest() -> bool:
     box = BoxMachinePlus()
 
@@ -51,7 +51,7 @@ def TrivialTest() -> DFunc:
 class Tr_TC:
 
     def test_TR(self, Tr, TrivialTest) -> None:
-        insts = Tr.trans(TrivialTest)
+        insts = Tr.trans(TrivialTest())
 
         assert insts is not None
 

@@ -241,3 +241,9 @@ class Machine(DaObj):
                 return op
 
         return spec_check
+
+
+class Executors(Machine): ...
+
+
+class Dut(Machine): ...

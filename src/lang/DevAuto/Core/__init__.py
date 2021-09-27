@@ -1,6 +1,7 @@
 # Export test structures
 from DevAuto.Core.devCore import Message, Operation, Config, \
-    Query, Property, OpSpec, Machine, DaObj, DelayObj
+    Query, Property, OpSpec, Machine, DaObj, DelayObj, \
+    Executors, Dut
 
 
 # Export core types

@@ -1,4 +1,3 @@
-import functools
 import typing as typ
 import DevAuto.Core as core
 
@@ -10,13 +9,20 @@ class DFunc:
     DevAuto Function
     """
 
-    def __init__(self, func: typ.Callable) -> None:
+    def __init__(self, func: typ.Callable, env: typ.Dict) -> None:
         self.__name__ = func.__name__
         self._func = func
         self.__IS_DA_FUNC__ = True
+        self._env = env
 
     def body(self) -> typ.Callable:
         return self._func
+
+    def env(self) -> typ.Dict:
+        return self._env
+
+    def __call__(self) -> 'DFunc':
+        return self
 
 
 class DIf:
@@ -153,8 +159,35 @@ class Equal(VInst):
         VInst.__init__(self, l, r)
 
 
-def function(t: typ.Callable) -> DFunc:
+class InstGrp:
+    """
+    InstGrp is a list of Insts with extra informations that
+    explain which executor and duts is need.
+    """
+
+    def __init__(self, insts: typ.List[Inst],
+                 duts: typ.List[str],
+                 executors: typ.List[str]) -> None:
+
+        self._insts = insts
+        self._duts = duts
+        self._executors = executors
+
+    def insts(self) -> typ.List[Inst]:
+        return self._insts
+
+    def duts(self) -> typ.List[str]:
+        return self._duts
+
+    def executors(self) -> typ.List[str]:
+        return self._executors
+
+
+def function(env):
     """
     Decorator that mark a python function as a DA function.
     """
-    return DFunc(t)
+    def deco(f: typ.Callable) -> DFunc:
+        return DFunc(f, env)
+
+    return deco

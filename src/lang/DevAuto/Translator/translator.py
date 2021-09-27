@@ -1,10 +1,11 @@
+from DevAuto.Core.devCore import Dut
 import ast
 import inspect
 import typing as typ
 
 from _pytest.fixtures import FuncFixtureInfo
 import DevAuto.Core as core
-from DevAuto.lang_imp import DFunc, Inst
+from DevAuto.lang_imp import DFunc, Inst, InstGrp
 
 # Debugging purposes
 import astpretty
@@ -26,27 +27,32 @@ class Translator:
         assert(isinstance(funcdef, ast.FunctionDef))
         funcdef.args.args.append(ast.arg(arg="insts"))
 
+        # Remove decorator
+        funcdef.decorator_list = []
+
         # Append a call expr
         # without this expr the pyfunc will not be executed
         # in exec()
         expr = ast.Expr(
             ast.Call(
                 func = ast.Name(id=funName, ctx=ast.Load()),
-                args = [],
+                args = [ ast.Name(id='insts', ctx = ast.Load()) ],
                 keywords = []))
         tree.body.append(expr)
         ast.fix_missing_locations(tree)
 
         return tree
 
-    def trans(self, func: DFunc) -> typ.List[Inst]:
+    def trans(self, func: DFunc) -> InstGrp:
         """
         Transform a DFunc into list of Insts.
         """
         pyfunc = func.body()
 
-        target_insts = []
-        global_env, loc_env = {}, { "insts": target_insts }
+        target_insts = InstGrp([], [], [])
+        global_env = func.env()
+        global_env["_da_expr_convert"] = _da_expr_convert
+        loc_env = { "insts": target_insts }
 
         # Transform AST nodes
         ast_nodes = ast.parse(inspect.getsource(pyfunc))
@@ -55,9 +61,7 @@ class Translator:
         self.preprocessing(ast_nodes, [pyfunc.__name__])
 
         # Transform from ast to List[Inst]
-        exec(compile(ast_nodes, "", 'exec'),
-             global_env,
-             loc_env)
+        exec(compile(ast_nodes, "", 'exec'), global_env, loc_env)
 
         return target_insts
 
@@ -89,17 +93,6 @@ class DA_NodeTransPreCheck(ast.NodeTransformer):
     """
     Do prechecking to ast nodes of DFunc
     """
-
-
-def _da_expr_convert(insts: typ.List[Inst], o: object) -> typ.Any:
-    """
-    Convert DaObj into insts. If o is a PyObj then do nothing
-    and the PyObj directly.
-    """
-    if isinstance(o, core.DaObj):
-        pass
-    else:
-        return o
 
 
 class DA_NodeTransTransform(ast.NodeTransformer):
@@ -140,3 +133,41 @@ class DA_NodeTransTransform(ast.NodeTransformer):
 
     def visit_Attribute(self, node):
         return node
+
+
+###############################################################################
+#                          _da_xxx_convert functions                          #
+###############################################################################
+def _da_expr_convert(insts: InstGrp, o: object) -> typ.Any:
+    """
+    Convert DaObj into insts. If o is a PyObj then do nothing
+    and the PyObj directly.
+    """
+    if isinstance(o, core.DaObj):
+        if isinstance(o, core.Machine):
+            return _da_machine_convert(insts, o)
+        elif isinstance(o, core.Operation):
+            return _da_oper_convert(insts, o)
+    else:
+        return o
+
+
+def _da_machine_convert(insts: InstGrp, m: core.Machine) -> core.Machine:
+    """
+    Generate requirements
+    """
+    if isinstance(m, core.Executors):
+        ...
+    elif isinstance(m, core.Dut):
+        ...
+    else:
+        """
+        A machine without extra identity
+        """
+        ...
+
+    return m
+
+
+def _da_oper_convert(insts: InstGrp, op: core.Operation) -> core.Operation:
+    return op
