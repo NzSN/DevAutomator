@@ -1,17 +1,10 @@
-from DevAuto.Core.devCore import Dut
 import ast
 import inspect
 import typing as typ
-
-from _pytest.fixtures import FuncFixtureInfo
 import DevAuto.Core as core
-from DevAuto.lang_imp import DFunc, Inst, InstGrp
-
-# Debugging purposes
+import DevAuto.lang_imp as dal
+import DevAuto.Translator.ast_wrappers as ast_wrapper
 import astpretty
-
-
-
 
 
 class Translator:
@@ -22,7 +15,7 @@ class Translator:
 
         # Add Insts :: List[Inst] as an arg
         # Insts is used to hold all Insts that equal
-        # to the DFunc.
+        # to the dal.DFunc.
         funcdef = tree.body[0]
         assert(isinstance(funcdef, ast.FunctionDef))
         funcdef.args.args.append(ast.arg(arg="insts"))
@@ -43,13 +36,13 @@ class Translator:
 
         return tree
 
-    def trans(self, func: DFunc) -> InstGrp:
+    def trans(self, func: dal.DFunc) -> dal.InstGrp:
         """
-        Transform a DFunc into list of Insts.
+        Transform a dal.DFunc into list of Insts.
         """
         pyfunc = func.body()
 
-        target_insts = InstGrp([], [], [])
+        target_insts = dal.InstGrp([], [], [])
         global_env = func.env()
         global_env["_da_expr_convert"] = _da_expr_convert
         loc_env = { "insts": target_insts }
@@ -68,7 +61,7 @@ class Translator:
 
 class DA_NodeTransformer(ast.NodeTransformer):
     """
-    Transform a DFunc into intermidiate form which able
+    Transform a dal.DFunc into intermidiate form which able
     to be execute by python interpreter to generate a list
     of DA instructions.
     """
@@ -79,7 +72,7 @@ class DA_NodeTransformer(ast.NodeTransformer):
 
     def visit(self, node: ast.AST) -> None:
         """
-        Make transformations to DFunc's ast nodes
+        Make transformations to dal.DFunc's ast nodes
         """
 
         # Make sure the ast is able to be transformed
@@ -91,13 +84,13 @@ class DA_NodeTransformer(ast.NodeTransformer):
 
 class DA_NodeTransPreCheck(ast.NodeTransformer):
     """
-    Do prechecking to ast nodes of DFunc
+    Do prechecking to ast nodes of dal.DFunc
     """
 
 
 class DA_NodeTransTransform(ast.NodeTransformer):
     """
-    Do transfromations to ast nodes of DFunc
+    Do transfromations to ast nodes of dal.DFunc
     """
 
     def visit_For(self, node):
@@ -119,47 +112,40 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         return node
 
     def visit_Assign(self, node: ast.Assign) -> ast.Assign:
-        node.value = ast.Call(
-            func = ast.Name(id = "_da_expr_convert", ctx = ast.Load()),
-            args = [
-                ast.Name(id = "insts", ctx = ast.Load()),
-                node.value
-            ],
-            keywords = []
-        )
-        ast.fix_missing_locations(node)
-
+        node.value = ast_wrapper.wrap_expr_in_func(
+            "_da_expr_convert", node.value)
         return node
 
-    def visit_Attribute(self, node):
+    def visit_Call(self, node) -> ast.expr:
+        node = ast_wrapper.wrap_expr_in_func(
+            "_da_expr_convert", node)
         return node
 
 
 ###############################################################################
 #                          _da_xxx_convert functions                          #
 ###############################################################################
-def _da_expr_convert(insts: InstGrp, o: object) -> typ.Any:
+def _da_expr_convert(insts: dal.InstGrp, o: object) -> typ.Any:
     """
     Convert DaObj into insts. If o is a PyObj then do nothing
     and the PyObj directly.
     """
-    if isinstance(o, core.DaObj):
-        if isinstance(o, core.Machine):
-            return _da_machine_convert(insts, o)
-        elif isinstance(o, core.Operation):
-            return _da_oper_convert(insts, o)
-    else:
-        return o
+    if isinstance(o, core.Machine):
+        return _da_machine_convert(insts, o)
+    if isinstance(o, core.DType):
+        return _da_oper_convert(insts, o)
+
+    return o
 
 
-def _da_machine_convert(insts: InstGrp, m: core.Machine) -> core.Machine:
+def _da_machine_convert(insts: dal.InstGrp, m: core.Machine) -> core.Machine:
     """
     Generate requirements
     """
     if isinstance(m, core.Executors):
-        ...
+        insts.addExecutor(m.ident())
     elif isinstance(m, core.Dut):
-        ...
+        insts.addDut(m.ident())
     else:
         """
         A machine without extra identity
@@ -169,5 +155,13 @@ def _da_machine_convert(insts: InstGrp, m: core.Machine) -> core.Machine:
     return m
 
 
-def _da_oper_convert(insts: InstGrp, op: core.Operation) -> core.Operation:
-    return op
+def _da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
+    op = val.compileInfo
+    assert isinstance(op, core.Operation)
+
+    opInfos = op.op()
+    op_inst = dal.OInst(opInfos.opcode,
+                        core.DList(opInfos.opargs),
+                        core.DStr())
+    insts.addInst(op_inst)
+    return val

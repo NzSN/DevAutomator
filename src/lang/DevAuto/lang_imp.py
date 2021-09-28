@@ -96,6 +96,11 @@ class OInst(Inst):
     def ret(self) -> core.DStr:
         return self._ret
 
+    def __eq__(self, o: 'OInst') -> bool:
+        return self._opcode == o.opcode() and \
+            self._args == o.args() and \
+            self._ret == o.ret()
+
 
 class VInst(Inst):
 
@@ -176,11 +181,20 @@ class InstGrp:
     def insts(self) -> typ.List[Inst]:
         return self._insts
 
+    def addInst(self, inst: Inst) -> None:
+        self._insts.append(inst)
+
     def duts(self) -> typ.List[str]:
         return self._duts
 
+    def addDut(self, dut: str) -> None:
+        self._duts.append(dut)
+
     def executors(self) -> typ.List[str]:
         return self._executors
+
+    def addExecutor(self, executor: str) -> None:
+        self._executors.append(executor)
 
 
 def function(env):

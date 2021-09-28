@@ -1,6 +1,7 @@
 import abc
 import typing as typ
-from collections import namedtuple, MutableSequence
+from collections import namedtuple
+from collections.abc import MutableSequence
 
 
 PropVal = typ.Union[typ.List[str], typ.Mapping[str, str]]
@@ -14,6 +15,7 @@ class DType(abc.ABC):
     def __init__(self, t: typ.Union[type, None] = None) -> None:
         self._origin = t
         self._value = None  # type: typ.Any
+        self.compileInfo = None  # type: typ.Any
 
     def value(self) -> typ.Any:
         return self._value
@@ -173,9 +175,12 @@ class DNone(DType):
 
 class DBool(DType):
 
-    def __init__(self, value: bool) -> None:
+    def __init__(self, value: bool = None) -> None:
         DType.__init__(self, bool)
-        self._value = value
+        if value is None:
+            self._value = True
+        else:
+            self._value = value
 
     def __bool__(self) -> bool:
         return self._value
@@ -184,7 +189,7 @@ class DBool(DType):
 ###############################################################################
 #                                  Operation                                  #
 ###############################################################################
-# opargs :: typ.Tuple[DType]
+# opargs :: typ.List[DType]
 opTuple = namedtuple("opTuple", "opcode opargs")
 opParameter = typ.List[typ.Tuple[str, typ.Type[DType]]]
 opRet = typ.Tuple[str, typ.Type[DType]]

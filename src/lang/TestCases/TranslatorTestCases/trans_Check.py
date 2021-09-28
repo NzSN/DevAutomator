@@ -2,16 +2,27 @@ import pytest
 import DevAuto as DA
 import DevAuto.Core as core
 import DevAuto.Translator.translator as trans
+import DevAuto.lang_imp as dal
 from DevAuto import DFunc
-from DevAuto.lang_imp import Inst
+from DevAuto.lang_imp import Inst, InstGrp
 from TestCases.CoreTestCases.devCore_Check import BoxMachine
 
 
-class BoxMachinePlus(BoxMachine):
+boxOpSpec = [
+    # is_open
+    core.OpSpec("is_open", [], ("successed", core.DBool)),
+]
+
+
+class BoxMachinePlus(BoxMachine, core.Dut):
 
     def __init__(self) -> None:
         BoxMachine.__init__(self)
+        self._operations.append(
+            core.OpSpec("is_open", [], ("successed", core.DBool))
+        )
 
+    @core.Machine.operation("is_open", boxOpSpec)
     def is_open(self) -> core.DBool:
         return self.operate(
             core.Operation(
@@ -51,10 +62,11 @@ def TrivialTest() -> DFunc:
 class Tr_TC:
 
     def test_TR(self, Tr, TrivialTest) -> None:
-        insts = Tr.trans(TrivialTest())
+        insts = Tr.trans(TrivialTest)  # type: InstGrp
 
         assert insts is not None
 
         # Verify that insts is successful generated
-        for inst in insts:
-            assert isinstance(inst, Inst)
+        assert insts.duts() == ["Box"]
+        assert insts.insts()[0] == \
+            dal.OInst("open", core.DList(), core.DStr())

@@ -227,7 +227,9 @@ class Machine(DaObj):
         if argsCheck(op.op().opargs, spec.parameter()) is False:
             raise dcexcep.OP_WITH_INVALID_ARGS()
 
-        return spec.retVal()[1]()
+        retVal = spec.retVal()[1]()
+        retVal.compileInfo = op
+        return retVal
 
     @staticmethod
     def operation(ident: str, specs: typ.List[OpSpec]) -> typ.Callable:
