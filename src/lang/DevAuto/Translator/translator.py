@@ -4,7 +4,6 @@ import typing as typ
 import DevAuto.Core as core
 import DevAuto.lang_imp as dal
 import DevAuto.Translator.ast_wrappers as ast_wrapper
-import astpretty
 
 
 class Translator:
@@ -113,12 +112,12 @@ class DA_NodeTransTransform(ast.NodeTransformer):
 
     def visit_Assign(self, node: ast.Assign) -> ast.Assign:
         node.value = ast_wrapper.wrap_expr_in_func(
-            "_da_expr_convert", node.value)
+            "_da_expr_convert", ["insts", "*"], node.value)
         return node
 
     def visit_Call(self, node) -> ast.expr:
         node = ast_wrapper.wrap_expr_in_func(
-            "_da_expr_convert", node)
+            "_da_expr_convert", ["insts", "*"], node)
         return node
 
 
