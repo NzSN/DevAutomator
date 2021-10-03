@@ -1,46 +1,8 @@
+import ast
 import typing as typ
 import DevAuto.Core as core
 
 T = typ.TypeVar("T")
-
-
-class DFunc:
-    """
-    DevAuto Function
-    """
-
-    def __init__(self, func: typ.Callable, env: typ.Dict) -> None:
-        self.__name__ = func.__name__
-        self._func = func
-        self.__IS_DA_FUNC__ = True
-        self._env = env
-
-    def body(self) -> typ.Callable:
-        return self._func
-
-    def env(self) -> typ.Dict:
-        return self._env
-
-    def __call__(self) -> 'DFunc':
-        return self
-
-
-class DIf:
-    """
-    IF statement of DevAuto.
-    """
-
-
-class DWhile:
-    """
-    While statement of DevAuto
-    """
-
-
-class DFor:
-    """
-    For statement of DevAuto
-    """
 
 
 class Var:
@@ -195,6 +157,67 @@ class InstGrp:
 
     def addExecutor(self, executor: str) -> None:
         self._executors.append(executor)
+
+
+class DFunc:
+    """
+    DevAuto Function
+    """
+
+    def __init__(self, func: typ.Callable, env: typ.Dict) -> None:
+        self.__name__ = func.__name__
+        self._func = func
+        self.__IS_DA_FUNC__ = True
+        self._env = env
+
+    def body(self) -> typ.Callable:
+        return self._func
+
+    def env(self) -> typ.Dict:
+        return self._env
+
+    def __call__(self) -> 'DFunc':
+        return self
+
+
+class DIf:
+    """
+    IF statement of DevAuto.
+    """
+
+    def __init__(self, insts: InstGrp,
+                 cond: typ.Union[core.DBool, bool]  ,
+                 body: typ.Callable,
+                 elseBody: typ.Callable) -> None:
+        self._insts = insts
+        self._cond = cond
+        self._body = body
+        self._elseBody = elseBody
+
+    def __call__(self, transFunc: typ.Callable[[InstGrp, 'DIf'], None]) -> None:
+        if type(self._cond) == core.DBool:
+            """
+            Which unable to be evaluated in python layer.
+            """
+            transFunc(self._insts, self)
+        else:
+            if self._cond:
+                self._body()
+            elif self._elseBody is not None:
+                self._elseBody()
+
+class DWhile:
+    """
+    While statement of DevAuto
+    """
+
+
+class DFor:
+    """
+    For statement of DevAuto
+    """
+
+
 
 
 def function(env):

@@ -40,14 +40,17 @@ def trivialTest() -> bool:
     box.open()
     if not box.is_open():
         return False
+    else:
+        return True
 
     box.put("candy")
     things = box.get()
 
     if things == "candy":
         return True
+    else:
+        return False
 
-    return False
 
 @pytest.fixture
 def Tr() -> trans.Translator:

@@ -1,5 +1,6 @@
 import ast
 import inspect
+import astpretty
 import typing as typ
 import DevAuto.Core as core
 import DevAuto.lang_imp as dal
@@ -98,16 +99,34 @@ class DA_NodeTransTransform(ast.NodeTransformer):
     def visit_While(self, node):
         return node
 
-    def visit_If(self, node):
-        return node
+    def visit_If(self, node: ast.IfExp):
+        body = node.body
+        elseBody = node.orelse
+
+        # Wrap body of if stmt into functions
+        bodyDef = ast_wrapper.function_define("body", [], body)
+        elseBodyDef = ast_wrapper.function_define("elseBody", [], elseBody)
+
+        call = ast.Call(
+            func = ast.Name(id = "DIf", ctx = ast.Load()),
+            args = [
+                node.test,
+                ast.Name(id = "body", ctx = ast.Load()),
+                ast.Name(id = "elseBody", ctx = ast.Load())
+            ],
+            keywords = []
+        )
+
+        # Wrap body, elseBody and call into a new local context
+        localContext = ast.FunctionDef()
+        localContextCall = ast.Call()
+
+        return [localContext, localContextCall]
 
     def visit_Return(self, node):
         return node
 
     def visit_BinOp(self, node):
-        return node
-
-    def visit_Compare(self, node):
         return node
 
     def visit_Assign(self, node: ast.Assign) -> ast.Assign:
@@ -159,8 +178,13 @@ def _da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
     assert isinstance(op, core.Operation)
 
     opInfos = op.op()
-    op_inst = dal.OInst(opInfos.opcode,
-                        core.DList(opInfos.opargs),
-                        core.DStr())
+    op_inst = dal.OInst(
+        opInfos.opcode,
+        core.DList(opInfos.opargs),
+        core.DStr())
     insts.addInst(op_inst)
     return val
+
+
+def _da_if_convert(insts: dal.InstGrp, ifStmt: dal.DIf) -> None:
+    pass
