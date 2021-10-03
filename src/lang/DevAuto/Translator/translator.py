@@ -107,12 +107,18 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         bodyDef = ast_wrapper.function_define("body", [], body)
         elseBodyDef = ast_wrapper.function_define("elseBody", [], elseBody)
 
-        call = ast.Call(
-            func = ast.Name(id = "DIf", ctx = ast.Load()),
+        ifCalling = ast.Call(
+            func = ast.Call(
+                func = ast.Name("DIf", ctx = ast.Load()),
+                args = [
+                    node.test,
+                    ast.Name("id = body", ctx = ast.Load()),
+                    ast.Name("id = elseBody", ctx = ast.Load())
+                ],
+                keywords = []
+            ),
             args = [
-                node.test,
-                ast.Name(id = "body", ctx = ast.Load()),
-                ast.Name(id = "elseBody", ctx = ast.Load())
+                ast.Name(id = "_da_if_convert", ctx = ast.Load())
             ],
             keywords = []
         )
