@@ -27,7 +27,8 @@ def wrap_expr_in_func(func: str, args: typ.List[str], node: ast.expr) -> ast.exp
     return new_expr
 
 
-def function_define(func: str, args: typ.List[str], body: typ.List[ast.stmt]) -> ast.FunctionDef:
+def function_define(func: str, args: typ.List[str],
+                    body: typ.List[ast.stmt]) -> ast.FunctionDef:
     new_func = ast.FunctionDef(
         name = func,
         args = ast.arguments(

@@ -38,18 +38,10 @@ def trivialTest() -> bool:
     box = BoxMachinePlus()
 
     box.open()
-    if not box.is_open():
-        return False
-    else:
-        return True
 
     box.put("candy")
     things = box.get()
 
-    if things == "candy":
-        return True
-    else:
-        return False
 
 
 @pytest.fixture

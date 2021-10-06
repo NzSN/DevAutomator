@@ -7,9 +7,52 @@ import DevAuto.lang_imp as dal
 import DevAuto.Translator.ast_wrappers as ast_wrapper
 
 
+class OUT_OF_IDENT(Exception):
+
+    def __init__(self, ident: str) -> None:
+        self._ident = ident
+
+    def __str__(self) -> str:
+        return "IdentGenerator '" + self._ident + \
+            "' is out of identifiers"
+
+
+class IdentGenerator:
+
+    def __init__(self, ident: str, prefix: str, max: int) -> None:
+        self._ident = ident
+        self._prefix = prefix
+        self._current_idx = 0
+        self._max = max
+
+    def ident(self) -> str:
+        return self._ident
+
+    def gen(self) -> str:
+        if self._current_idx > self._max:
+            raise OUT_OF_IDENT(self._ident)
+
+        ident = self._prefix + "_" + str(self._current_idx)
+        self._current_idx += 1
+
+        return ident
+
+    def set_max(self, max: int) -> None:
+        self._max = max
+
+
 class Translator:
 
-    def preprocessing(self, tree: ast.Module, info: typ.List) -> ast.AST:
+    def preprocessing_before_transform(self, tree: ast.Module, info: typ.List) -> ast.AST:
+        funcdef = tree.body[0]
+        assert(isinstance(funcdef, ast.FunctionDef))
+
+        # Remove decorator
+        funcdef.decorator_list = []
+
+        return tree
+
+    def preprocessing_after_transform(self, tree: ast.Module, info: typ.List) -> ast.AST:
 
         funName = info[0]
 
@@ -18,10 +61,7 @@ class Translator:
         # to the dal.DFunc.
         funcdef = tree.body[0]
         assert(isinstance(funcdef, ast.FunctionDef))
-        funcdef.args.args.append(ast.arg(arg="insts"))
-
-        # Remove decorator
-        funcdef.decorator_list = []
+        funcdef.args.args.append(ast.arg(arg="insts", annotation=None, type_comment=None))
 
         # Append a call expr
         # without this expr the pyfunc will not be executed
@@ -49,9 +89,13 @@ class Translator:
 
         # Transform AST nodes
         ast_nodes = ast.parse(inspect.getsource(pyfunc))
+
+        self.preprocessing_before_transform(ast_nodes, [pyfunc.__name__])
+
         DA_NodeTransformer().visit(ast_nodes)
 
-        self.preprocessing(ast_nodes, [pyfunc.__name__])
+        self.preprocessing_after_transform(ast_nodes, [pyfunc.__name__])
+
 
         # Transform from ast to List[Inst]
         exec(compile(ast_nodes, "", 'exec'), global_env, loc_env)
@@ -93,27 +137,40 @@ class DA_NodeTransTransform(ast.NodeTransformer):
     Do transfromations to ast nodes of dal.DFunc
     """
 
+    def __init__(self) -> None:
+        ast.NodeTransformer.__init__(self)
+        self._func_ident_gen = IdentGenerator("funcGen", "_lambda", 10000)
+
     def visit_For(self, node):
         return node
 
     def visit_While(self, node):
         return node
 
-    def visit_If(self, node: ast.IfExp):
-        body = node.body
-        elseBody = node.orelse
+    def visit_If(self, node: ast.If):
+
+        # Get dynamic identifier for body function and
+        # elseBody function to prevent global namespace
+        # conflicts
+        body_func_id = self._func_ident_gen.gen()
+        else_body_func_id = self._func_ident_gen.gen()
 
         # Wrap body of if stmt into functions
-        bodyDef = ast_wrapper.function_define("body", [], body)
-        elseBodyDef = ast_wrapper.function_define("elseBody", [], elseBody)
+        bodyDef = ast_wrapper.function_define(body_func_id, [], node.body)
+        elseBodyDef = ast_wrapper.function_define(
+            else_body_func_id, [], node.orelse)
+
+        # Transform stmts in body and elsebody recursively.
+        #self.visit(bodyDef
+        #self.visit(elseBodyDef)
 
         ifCalling = ast.Call(
             func = ast.Call(
                 func = ast.Name("DIf", ctx = ast.Load()),
                 args = [
                     node.test,
-                    ast.Name("id = body", ctx = ast.Load()),
-                    ast.Name("id = elseBody", ctx = ast.Load())
+                    ast.Name(id = body_func_id, ctx = ast.Load()),
+                    ast.Name(id = else_body_func_id, ctx = ast.Load())
                 ],
                 keywords = []
             ),
@@ -122,12 +179,10 @@ class DA_NodeTransTransform(ast.NodeTransformer):
             ],
             keywords = []
         )
+        ast.fix_missing_locations(ifCalling)
 
-        # Wrap body, elseBody and call into a new local context
-        localContext = ast.FunctionDef()
-        localContextCall = ast.Call()
+        return [bodyDef, elseBodyDef, ifCalling]
 
-        return [localContext, localContextCall]
 
     def visit_Return(self, node):
         return node
