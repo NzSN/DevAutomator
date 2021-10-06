@@ -92,10 +92,9 @@ class Translator:
 
         self.preprocessing_before_transform(ast_nodes, [pyfunc.__name__])
 
-        DA_NodeTransformer().visit(ast_nodes)
+        DA_NodeTransformer(global_env).visit(ast_nodes)
 
         self.preprocessing_after_transform(ast_nodes, [pyfunc.__name__])
-
 
         # Transform from ast to List[Inst]
         exec(compile(ast_nodes, "", 'exec'), global_env, loc_env)
@@ -110,9 +109,10 @@ class DA_NodeTransformer(ast.NodeTransformer):
     of DA instructions.
     """
 
-    def __init__(self) -> None:
-        self._precheck_transformer = DA_NodeTransPreCheck()
-        self._trans_transformer = DA_NodeTransTransform()
+    def __init__(self, env: typ.Dict) -> None:
+        self._env = env
+        self._precheck_transformer = DA_NodeTransPreCheck(env)
+        self._trans_transformer = DA_NodeTransTransform(env)
 
     def visit(self, node: ast.AST) -> None:
         """
@@ -131,14 +131,19 @@ class DA_NodeTransPreCheck(ast.NodeTransformer):
     Do prechecking to ast nodes of dal.DFunc
     """
 
+    def __init__(self, env: typ.Dict) -> None:
+        ast.NodeTransformer.__init__(self)
+        self._env = env
+
 
 class DA_NodeTransTransform(ast.NodeTransformer):
     """
     Do transfromations to ast nodes of dal.DFunc
     """
 
-    def __init__(self) -> None:
+    def __init__(self, env: typ.Dict) -> None:
         ast.NodeTransformer.__init__(self)
+        self._env = env
         self._func_ident_gen = IdentGenerator("funcGen", "_lambda", 10000)
 
     def visit_For(self, node):
@@ -161,13 +166,14 @@ class DA_NodeTransTransform(ast.NodeTransformer):
             else_body_func_id, [], node.orelse)
 
         # Transform stmts in body and elsebody recursively.
-        #self.visit(bodyDef
-        #self.visit(elseBodyDef)
+        self.visit(bodyDef)
+        self.visit(elseBodyDef)
 
-        ifCalling = ast.Call(
+        ifCalling = ast.Expr(value=ast.Call(
             func = ast.Call(
                 func = ast.Name("DIf", ctx = ast.Load()),
                 args = [
+                    ast.Name(id = "insts", ctx = ast.Load()),
                     node.test,
                     ast.Name(id = body_func_id, ctx = ast.Load()),
                     ast.Name(id = else_body_func_id, ctx = ast.Load())
@@ -178,8 +184,11 @@ class DA_NodeTransTransform(ast.NodeTransformer):
                 ast.Name(id = "_da_if_convert", ctx = ast.Load())
             ],
             keywords = []
-        )
+        ))
         ast.fix_missing_locations(ifCalling)
+
+        self._env['DIf'] = dal.DIf
+        self._env['_da_if_convert'] = _da_if_convert
 
         return [bodyDef, elseBodyDef, ifCalling]
 

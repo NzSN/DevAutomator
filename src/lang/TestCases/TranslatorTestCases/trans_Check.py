@@ -42,6 +42,10 @@ def trivialTest() -> bool:
     box.put("candy")
     things = box.get()
 
+    if things == "candy":
+        return True
+    else:
+        return False
 
 
 @pytest.fixture
