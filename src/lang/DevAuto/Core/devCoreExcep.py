@@ -50,3 +50,13 @@ class OP_SPEC_NOT_FOUND(Exception):
 
     def __str__(self) -> str:
         return self._op + " is not supported by machine " + self._machine
+
+
+class DBOOL_IS_NOT_IN_VALID_FORM(Exception):
+    """
+    An DBool in invalid form is not comparable if do it
+    then need to throw exception
+    """
+
+    def __str__(self) -> str:
+        return "DBool in invalid form is not comparable"

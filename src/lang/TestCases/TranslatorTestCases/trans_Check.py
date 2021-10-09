@@ -61,11 +61,26 @@ def TrivialTest() -> DFunc:
 class Tr_TC:
 
     def test_TR(self, Tr, TrivialTest) -> None:
-        insts = Tr.trans(TrivialTest)  # type: InstGrp
+        instgrp = Tr.trans(TrivialTest)  # type: InstGrp
 
-        assert insts is not None
+        assert instgrp is not None
 
         # Verify that insts is successful generated
-        assert insts.duts() == ["Box"]
-        assert insts.insts()[0] == \
-            dal.OInst("open", core.DList(), core.DStr())
+        # box = BoxMachinePlus()
+        assert instgrp.duts() == ["Box"]
+
+        insts = instgrp.insts()
+
+        assert insts[0] == \
+            dal.OInst("open", core.DList(), dal.Var(""))
+
+        # box.put("candy")
+        assert insts[1] == \
+            dal.OInst("put", core.DList(), dal.Var(""))
+
+        # if things == "candy":
+        #     return True
+        # else:
+        #     return False
+        assert insts[2] == \
+            dal.OInst("get", core.DList(), dal.Var("things"))

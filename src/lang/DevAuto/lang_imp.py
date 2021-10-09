@@ -7,8 +7,15 @@ T = typ.TypeVar("T")
 
 class Var:
 
-    def __init__(self, value: typ.Any) -> None:
+    def __init__(self, ident: str, value: typ.Any = None) -> None:
+        """
+        None means
+        """
+        self.ident = ident
         self.value = value
+
+    def __eq__(self, o: 'Var') -> core.DBool:
+        return core.DBool(self.ident == o.ident)
 
 
 class Inst:
@@ -24,16 +31,8 @@ class CInst(Inst):
 
     COND_INST = "CInst"
 
-    def __init__(self, var: Var, dest: core.DInt) -> None:
+    def __init__(self) -> None:
         Inst.__init__(self, self.COND_INST)
-        self._test = var
-        self._dest = dest
-
-    def cond(self) -> Var:
-        return self._test
-
-    def dest(self) -> core.DInt:
-        return self._dest
 
 
 class OInst(Inst):
@@ -42,7 +41,7 @@ class OInst(Inst):
 
     def __init__(self, opcode: str,
                  args: core.DList[core.DStr],
-                 ret: core.DStr) -> None:
+                 ret: Var) -> None:
 
         Inst.__init__(self, self.OPER_INST)
         self._opcode = opcode
@@ -55,11 +54,11 @@ class OInst(Inst):
     def args(self) -> core.DList:
         return self._args
 
-    def ret(self) -> core.DStr:
+    def ret(self) -> Var:
         return self._ret
 
-    def __eq__(self, o: 'OInst') -> bool:
-        return self._opcode == o.opcode() and \
+    def __eq__(self, o: 'OInst') -> core.DBool:
+        return core.DBool(self._opcode == o.opcode()) and \
             self._args == o.args() and \
             self._ret == o.ret()
 
@@ -102,21 +101,22 @@ class Fail(Term):
 
 class Jmp(CInst):
 
-    def __init__(self, cond: Var, to: core.DInt) -> None:
-        CInst.__init__(self, cond, to)
-        self._cond = cond
+    def __init__(self, to: core.DInt) -> None:
+        CInst.__init__(self)
         self._to = to
-
-    def cond(self) -> Var:
-        return self._cond
 
     def to(self) -> core.DInt:
         return self._to
 
 
+class Jmpeq(CInst):
+    ...
+
+
+
 class Op(OInst):
 
-    def __init__(self, opcode: str, args: core.DList[core.DStr], ret: core.DStr) -> None:
+    def __init__(self, opcode: str, args: core.DList[core.DStr], ret: Var) -> None:
         OInst.__init__(self, opcode, args, ret)
 
 
@@ -139,9 +139,38 @@ class InstGrp:
         self._insts = insts
         self._duts = duts
         self._executors = executors
+        self.compileDict = {}
+
+    def setFlagT(self, flag: str) -> None:
+        self.compileDict[flag] = True
+
+    def setFlagF(self, flag: str) -> None:
+        self.compileDict[flag] = False
+
+    def unsetFlag(self, flag: str) -> None:
+        self.compileDict[flag] = None
+
+    def getFlag(self, flag: str) -> typ.Optional[typ.Any]:
+        if flag in self.compileDict:
+            return self.compileDict[flag]
+        else:
+            return None
+
+    def isFlagSetuped(self, flag: str) -> bool:
+        return flag in self.compileDict and \
+            self.compileDict[flag] != None
+
+    def setFlagWith(self, flag: str, v: typ.Any) -> None:
+        self.compileDict[flag] = v
 
     def insts(self) -> typ.List[Inst]:
         return self._insts
+
+    def __len__(self) -> int:
+        return len(self._insts)
+
+    def __getitem__(self, index: int) -> typ.Optional[Inst]:
+        return self._insts[index]
 
     def addInst(self, inst: Inst) -> None:
         self._insts.append(inst)
@@ -194,6 +223,15 @@ class DIf:
         self._body = body
         self._elseBody = elseBody
 
+    def cond(self) -> typ.Union[core.DBool, bool]:
+        return self._cond
+
+    def body(self) -> typ.Callable:
+        return self._body
+
+    def elseBody(self) -> typ.Callable:
+        return self._elseBody
+
     def __call__(self, transFunc: typ.Callable[[InstGrp, 'DIf'], None]) -> None:
         if type(self._cond) == core.DBool:
             """
@@ -216,8 +254,6 @@ class DFor:
     """
     For statement of DevAuto
     """
-
-
 
 
 def function(env):

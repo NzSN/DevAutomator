@@ -1,5 +1,6 @@
 import abc
 import typing as typ
+from DevAuto.Core.devCoreExcep import DBOOL_IS_NOT_IN_VALID_FORM
 from collections import namedtuple
 from collections.abc import MutableSequence
 
@@ -16,9 +17,35 @@ class DType(abc.ABC):
         self._origin = t
         self._value = None  # type: typ.Any
         self.compileInfo = None  # type: typ.Any
+        self.extra = {}  # type: typ.Dict
 
     def value(self) -> typ.Any:
         return self._value
+
+
+class DBool(DType):
+
+    def __init__(self, value: bool = None) -> None:
+        DType.__init__(self, bool)
+        if value is None:
+            self._value = True
+        else:
+            self._value = value
+
+    def isValidForm(self) -> bool:
+        return isinstance(self._value, bool)
+
+    def __eq__(self, o: 'DBool') -> 'DBool':
+        if self._value is None or \
+           o._value is None:
+            raise DBOOL_IS_NOT_IN_VALID_FORM()
+        return DBool(self._value == o._value)
+
+    def __bool__(self) -> bool:
+        return self._value
+
+    def __and__(self, o: 'DBool') -> 'DBool':
+        return DBool(self._value and o._value)
 
 
 class DInt(DType):
@@ -39,11 +66,11 @@ class DInt(DType):
     def __radd__(self, other: typ.Union['DInt', int]) -> 'DInt':
         return self.__add__(other)
 
-    def __eq__(self, o: typ.Union['DInt', int]) -> bool:
+    def __eq__(self, o: typ.Union['DInt', int]) -> DBool:
         if isinstance(o, int):
-            return self._value == o
+            return DBool(self._value == o)
         else:
-            return self._value == o.value()
+            return DBool(self._value == o.value())
 
     def __mul__(self, o: typ.Union['DInt', int]) -> 'DInt':
         if isinstance(o, int):
@@ -67,11 +94,11 @@ class DStr(DType):
     def __str__(self) -> str:
         return self._value
 
-    def __eq__(self, o: typ.Union['DStr', str]) -> bool:
+    def __eq__(self, o: typ.Union['DStr', str]) -> DBool:
         if isinstance(o, str):
-            return self._value == o
+            return DBool(self._value == o)
         else:
-            return self._value == o.value()
+            return DBool(self._value == o.value())
 
 
 DListElemType = typ.TypeVar('DListElemType')
@@ -106,8 +133,8 @@ class DList(DType,
     def __delitem__(self, key: int) -> None:
         return None
 
-    def __eq__(self, o) -> bool:
-        return True
+    def __eq__(self, o) -> DBool:
+        return DBool(True)
 
     def __contains__(self, x: DListElemType) -> bool:
         return True
@@ -144,8 +171,8 @@ class DDict(DType):
         that to say set something from DDict
         """
 
-    def __eq__(self, o) -> bool:
-        return True
+    def __eq__(self, o) -> DBool:
+        return DBool(True)
 
 
 class DTuple(DType):
@@ -169,21 +196,8 @@ class DNone(DType):
         DType.__init__(self, None)
         self._value = None
 
-    def __eq__(self, o) -> bool:
-        return True
-
-
-class DBool(DType):
-
-    def __init__(self, value: bool = None) -> None:
-        DType.__init__(self, bool)
-        if value is None:
-            self._value = True
-        else:
-            self._value = value
-
-    def __bool__(self) -> bool:
-        return self._value
+    def __eq__(self, o) -> DBool:
+        return DBool(True)
 
 
 ###############################################################################

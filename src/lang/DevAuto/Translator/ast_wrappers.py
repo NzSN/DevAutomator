@@ -1,7 +1,5 @@
 import ast
-import typing
 import typing as typ
-
 
 
 def wrap_expr_arg_proc(args: typ.List[str], node: ast.expr) -> typ.List:
@@ -16,7 +14,7 @@ def wrap_expr_arg_proc(args: typ.List[str], node: ast.expr) -> typ.List:
     return arg_proced
 
 
-def wrap_expr_in_func(func: str, args: typ.List[str], node: ast.expr) -> ast.expr:
+def wrap_expr_in_func(func: str, args: typ.List[str], node: ast.expr) -> ast.Calll:
     new_expr = ast.Call(
         func = ast.Name(id = func, ctx = ast.Load()),
         args = wrap_expr_arg_proc(args, node),

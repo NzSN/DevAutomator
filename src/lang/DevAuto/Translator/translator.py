@@ -2,6 +2,7 @@ import ast
 import inspect
 import astpretty
 import typing as typ
+import DevAuto.transFlags as flags
 import DevAuto.Core as core
 import DevAuto.lang_imp as dal
 import DevAuto.Translator.ast_wrappers as ast_wrapper
@@ -192,7 +193,6 @@ class DA_NodeTransTransform(ast.NodeTransformer):
 
         return [bodyDef, elseBodyDef, ifCalling]
 
-
     def visit_Return(self, node):
         return node
 
@@ -200,11 +200,32 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         return node
 
     def visit_Assign(self, node: ast.Assign) -> ast.Assign:
-        node.value = ast_wrapper.wrap_expr_in_func(
-            "_da_expr_convert", ["insts", "*"], node.value)
+        if len(node.targets) > 1:
+            raise Exception("Multiple assign is not supported")
+
+        target = typ.cast(ast.Name, node.targets[0])
+        node.value = ast.Call(
+            func = ast.Name(id = "_da_assign_convert", ctx = ast.Load()),
+            args = [
+                ast.Name(id = "insts", ctx = ast.Load()),
+                node.value,
+                ast.Constant(value = target.id, kind = None)
+            ],
+            keywords = []
+        )
+
+        # Environment updates
+        self._env["_da_assign_convert"] = _da_assign_convert
+
         return node
 
-    def visit_Call(self, node) -> ast.expr:
+    def visit_Call(self, node: ast.Call) -> ast.Call:
+        for arg in node.args:
+            # Transform every argument of this call
+            # into intermidiate form
+            self.visit(arg)
+        # To check that is any Operations is called
+        # as arguments of this calling.
         node = ast_wrapper.wrap_expr_in_func(
             "_da_expr_convert", ["insts", "*"], node)
         return node
@@ -213,6 +234,36 @@ class DA_NodeTransTransform(ast.NodeTransformer):
 ###############################################################################
 #                          _da_xxx_convert functions                          #
 ###############################################################################
+def _da_assign_convert(insts: dal.InstGrp, o: object, target: str) -> typ.Any:
+
+    if not isinstance(o, core.Machine) and \
+       not isinstance(o, core.DType):
+
+        return o
+
+    instCount = len(insts)
+
+    # Convert right expr into Inst
+    retValue = _da_expr_convert(insts, o)
+
+    # A new inst is generate
+    # there should only one inst is generated
+    if instCount + 1 == len(insts):
+
+        # Add target to the last generated operation
+        inst = insts[-1]
+
+        # Only support Operation Instructions
+        assert(isinstance(inst, dal.OInst))
+
+        ret = inst.ret()
+        ret.ident = target
+    elif instCount == len(insts):
+        # It must a Dut or Executor initializes
+        return o
+
+    return retValue
+
 def _da_expr_convert(insts: dal.InstGrp, o: object) -> typ.Any:
     """
     Convert DaObj into insts. If o is a PyObj then do nothing
@@ -220,7 +271,7 @@ def _da_expr_convert(insts: dal.InstGrp, o: object) -> typ.Any:
     """
     if isinstance(o, core.Machine):
         return _da_machine_convert(insts, o)
-    if isinstance(o, core.DType):
+    elif isinstance(o, core.DType):
         return _da_oper_convert(insts, o)
 
     return o
@@ -251,10 +302,42 @@ def _da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
     op_inst = dal.OInst(
         opInfos.opcode,
         core.DList(opInfos.opargs),
-        core.DStr())
+        dal.Var(""))
     insts.addInst(op_inst)
     return val
 
 
 def _da_if_convert(insts: dal.InstGrp, ifStmt: dal.DIf) -> None:
-    pass
+    cond = ifStmt.cond()
+
+    if isinstance(cond, bool):
+        return
+
+
+def _da_equal_convert(
+        insts: dal.InstGrp,
+        loperand: ast.expr,
+        roperand: ast.expr) -> typ.Union[bool, core.DBool]:
+
+    # Setup transform flags
+    insts.setFlagT(flags.IN_IF_COND_TRANS)
+    insts.setFlagF(flags.IF_COND_COMPUTEABLE_IN_PYTHON)
+    insts.unsetFlag(flags.IF_COND_BOOLEAN_VALUE)
+
+    test_ret = loperand == roperand
+
+    if isinstance(test_ret, bool):
+        insts.setFlagT(flags.IF_COND_COMPUTEABLE_IN_PYTHON)
+        return test_ret
+    elif isinstance(test_ret, core.DBool):
+
+        if test_ret.isValidForm():
+            # It's value is computable in python layer
+            insts.setFlagT(flags.IF_COND_COMPUTEABLE_IN_PYTHON)
+            return test_ret
+
+        # DBool is not computable so need to generate
+        # insts to get the boolean value of the test
+        # condition.
+
+    return True
