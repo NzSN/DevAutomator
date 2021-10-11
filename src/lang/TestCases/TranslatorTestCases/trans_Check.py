@@ -11,6 +11,10 @@ from TestCases.CoreTestCases.devCore_Check import BoxMachine
 boxOpSpec = [
     # is_open
     core.OpSpec("is_open", [], ("successed", core.DBool)),
+    # op
+    core.OpSpec("op", [("arg", core.DStr)], ("ret", core.DNone)),
+    # query
+    core.OpSpec("query", [("arg", core.DStr)], ("ret", core.DStr))
 ]
 
 
@@ -18,9 +22,7 @@ class BoxMachinePlus(BoxMachine, core.Dut):
 
     def __init__(self) -> None:
         BoxMachine.__init__(self)
-        self._operations.append(
-            core.OpSpec("is_open", [], ("successed", core.DBool))
-        )
+        self._operations = self._operations + boxOpSpec
 
     @core.Machine.operation("is_open", boxOpSpec)
     def is_open(self) -> core.DBool:
@@ -32,21 +34,33 @@ class BoxMachinePlus(BoxMachine, core.Dut):
             )
         )
 
+    @core.Machine.operation("op", boxOpSpec)
+    def op(self, arg: core.DStr) -> None:
+        return self.operate(
+            core.Operation(
+                "core",
+                "Box",
+                core.opTuple("op", [arg])
+            )
+        )
+
+    @core.Machine.operation("query", boxOpSpec)
+    def query(self, arg: core.DStr) -> core.DStr:
+        return self.operate(
+            core.Operation(
+                "core",
+                "Box",
+                core.opTuple("query", [arg])
+            )
+        )
+
 
 @DA.function(globals())
 def trivialTest() -> bool:
     box = BoxMachinePlus()
+    box.op(box.query(core.DStr("thing")))
 
-    box.open()
-
-    box.put("candy")
-    things = box.get()
-
-    if things == "candy":
-        return True
-    else:
-        return False
-
+    return True
 
 @pytest.fixture
 def Tr() -> trans.Translator:
@@ -71,16 +85,4 @@ class Tr_TC:
 
         insts = instgrp.insts()
 
-        assert insts[0] == \
-            dal.OInst("open", core.DList(), dal.Var(""))
-
-        # box.put("candy")
-        assert insts[1] == \
-            dal.OInst("put", core.DList(), dal.Var(""))
-
-        # if things == "candy":
-        #     return True
-        # else:
-        #     return False
-        assert insts[2] == \
-            dal.OInst("get", core.DList(), dal.Var("things"))
+        assert 1 == 2
