@@ -97,6 +97,8 @@ class Translator:
 
         self.preprocessing_after_transform(ast_nodes, [pyfunc.__name__])
 
+        astpretty.pprint(ast_nodes)
+
         # Transform from ast to List[Inst]
         exec(compile(ast_nodes, "", 'exec'), global_env, loc_env)
 
@@ -220,14 +222,34 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         return node
 
     def visit_Call(self, node: ast.Call) -> ast.Call:
-        for arg in node.args:
+
+        mode = ARG_EMPTY
+        args = []
+
+        if len(node.args) > 0:
+            mode = ARG_AWAIT
+
             # Transform every argument of this call
             # into intermidiate form
-            self.visit(arg)
+            args = [self.visit(arg) for arg in node.args]
+
+            # Replace original arguments
+            # with transformed arguments.
+            node.args = args
+
         # To check that is any Operations is called
         # as arguments of this calling.
-        node = ast_wrapper.wrap_expr_in_func(
-            "_da_expr_convert", ["insts", "*"], node)
+        node = ast.Call(
+            func = ast.Name(id = "_da_call_convert", ctx = ast.Load()),
+            args = [
+                ast.Name(id = "insts", ctx = ast.Load()),
+                node,
+                ast.Constant(value = mode, kind = None)
+            ],
+            keywords = []
+        )
+
+        self._env["_da_call_convert"] = _da_call_convert
         return node
 
 
@@ -275,6 +297,52 @@ def _da_expr_convert(insts: dal.InstGrp, o: object) -> typ.Any:
         return _da_oper_convert(insts, o)
 
     return o
+
+
+###############################################################################
+#                          Call Expression Transform                          #
+###############################################################################
+ARG_EMPTY = 0
+ARG_AWAIT = 1
+ARG_PROVIDE = 2
+
+
+class _DA_CALL_CONVERT_ERROR_MODE(Exception):
+
+    def __init__(self, mode: int) -> None:
+        self._mode = mode
+
+    def __str__(self) -> str:
+        return "_da_call_convert with wrong mode '" + \
+               str(self._mode)  +"'."
+
+
+def _da_call_convert(insts: dal.InstGrp, o: ast.Call, mode: int = ARG_EMPTY) -> ast.Call:
+
+    if mode == ARG_EMPTY:
+        return _da_call_no_arguments(insts, o)
+    elif mode == ARG_AWAIT:
+        return _da_call_with_arguments(insts, o)
+    elif mode == ARG_PROVIDE:
+        return _da_call_provide_arguments(insts, o)
+    else:
+        raise _DA_CALL_CONVERT_ERROR_MODE(mode)
+
+
+def _da_call_no_arguments(insts: dal.InstGrp, o: ast.Call) -> ast.Call:
+    """
+    Generate correspond Instructions
+    """
+
+
+def _da_call_with_arguments(insts: dal.InstGrp, o: ast.Call) -> ast.Call:
+    ...
+
+
+def _da_call_provide_arguments(insts: dal.InstGrp, o: object) -> ast.Call:
+    ...
+
+
 
 
 def _da_machine_convert(insts: dal.InstGrp, m: core.Machine) -> core.Machine:
