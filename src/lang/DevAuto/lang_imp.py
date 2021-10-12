@@ -1,4 +1,3 @@
-import ast
 import typing as typ
 import DevAuto.Core as core
 
@@ -7,7 +6,7 @@ T = typ.TypeVar("T")
 
 class Var:
 
-    def __init__(self, ident: str, value: typ.Any = None) -> None:
+    def __init__(self, ident: str = "", value: typ.Any = None) -> None:
         """
         None means
         """

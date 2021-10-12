@@ -10,5 +10,7 @@ IF_COND_OPERAND = "ICO"
 ###############################################################################
 #                            Call Expression Flags                            #
 ###############################################################################
+
+# Description: Place to hold arguments for a Call
+# type:        List[Inst]
 CALL_ARGUMENTS = "CARG"
-ARGUMENT_PROVIDE = "ARGP"

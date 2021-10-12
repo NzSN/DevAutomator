@@ -1,4 +1,5 @@
 import pytest
+import typing as typ
 import DevAuto as DA
 import DevAuto.Core as core
 import DevAuto.Translator.translator as trans
@@ -56,7 +57,7 @@ class BoxMachinePlus(BoxMachine, core.Dut):
 
 
 @DA.function(globals())
-def trivialTest() -> bool:
+def CallExpression_Case_1() -> bool:
     box = BoxMachinePlus()
     box.op(box.query(core.DStr("thing")))
 
@@ -68,14 +69,15 @@ def Tr() -> trans.Translator:
 
 
 @pytest.fixture
-def TrivialTest() -> DFunc:
-    return trivialTest
+def CallExpression_Cases() -> typ.List[DFunc]:
+    tests = [CallExpression_Case_1]
+    return tests
 
 
 class Tr_TC:
 
-    def test_TR(self, Tr, TrivialTest) -> None:
-        instgrp = Tr.trans(TrivialTest)  # type: InstGrp
+    def test_Call_Expression_Transform(self, Tr, CallExpression_Cases) -> None:
+        instgrp = Tr.trans(CallExpression_Cases[0])  # type: InstGrp
 
         assert instgrp is not None
 
