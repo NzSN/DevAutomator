@@ -1,4 +1,5 @@
 import ast
+import copy
 import inspect
 import astpretty
 import typing as typ
@@ -103,9 +104,9 @@ class Translator:
         self.preprocessing_after_transform(ast_nodes, [pyfunc.__name__])
 
         # Transform from ast to List[Inst]
-        exec(compile(ast_nodes, "", 'exec'), global_env, loc_env)
+        exec(compile(ast_nodes, "", 'exec'), global_env, {})
 
-        return target_insts
+        return global_env["insts"]
 
 
 class DA_NodeTransformer(ast.NodeTransformer):
@@ -142,6 +143,61 @@ class DA_NodeTransPreCheck(ast.NodeTransformer):
         self._env = env
 
 
+class TransFlags:
+
+    ARGUMENT_AWAIT = "arg"
+    IF_TEST_EXPR = "ITE"
+
+    def __init__(self) -> None:
+        self._flagsDefault = {
+            # Indicate that current expr is
+            # argument of another expr
+            self.ARGUMENT_AWAIT: False,
+        }  # type: typ.Dict[str, typ.Any]
+
+        self._stack = [copy.deepcopy(self._flagsDefault)]
+
+    def current(self) -> typ.Dict[str, typ.Any]:
+        return self._stack[-1]
+
+    def set(self, key: str, value: typ.Any) -> None:
+        self.current()[key] = value
+
+    def unset(self, key: str) -> None:
+        self.current()[key] = None
+
+    def setTrue(self, key: str) -> None:
+        self.current()[key] = True
+
+    def setFalse(self, key: str) -> None:
+        self.current()[key] = False
+
+    def arg_await(self) -> None:
+        """
+        Set arg_await flag to let Transformer to
+        provide subexpr's value to parent.
+        """
+        self.setTrue(self.ARGUMENT_AWAIT)
+
+    def is_arg_await(self) -> bool:
+        return self.current()[self.ARGUMENT_AWAIT] == True
+
+    def is_if_test(self) -> bool:
+        return self.current()[self.IF_TEST_EXPR] == True
+
+    def recursive_in(self) -> None:
+        self._stack.append(copy.deepcopy(self._flagsDefault))
+
+    def recursive_out(self) -> None:
+        if len(self._stack) > 1:
+            self._stack.pop()
+        else:
+            return
+
+    def is_recursive_inner(self) -> bool:
+        return len(self._stack) == 0
+
+
 class DA_NodeTransTransform(ast.NodeTransformer):
     """
     Do transfromations to ast nodes of dal.DFunc
@@ -151,6 +207,17 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         ast.NodeTransformer.__init__(self)
         self._env = env
         self._func_ident_gen = IdentGenerator("funcGen", "_lambda", 10000)
+        self._flags = TransFlags()
+
+    def decorate(self, new_insts: typ.List[ast.AST]) -> None:
+
+        if self._flags.is_arg_await():
+            # New insts is as argument of another inst.
+            ...
+        if self._flags.is_if_test():
+            # New insts is as condition expression of
+            # an Jmpxx inst.
+            ...
 
     def visit_For(self, node):
         return node
@@ -226,11 +293,12 @@ class DA_NodeTransTransform(ast.NodeTransformer):
 
     def visit_Call(self, node: ast.Call) -> ast.Call:
 
-        mode = ARG_EMPTY
         args = []
 
         if len(node.args) > 0:
-            mode = ARG_AWAIT
+
+            self._flags.recursive_in()
+            self._flags.arg_await()
 
             # Transform every argument of this call
             # into intermidiate form
@@ -247,12 +315,13 @@ class DA_NodeTransTransform(ast.NodeTransformer):
             args = [
                 ast.Name(id = "insts", ctx = ast.Load()),
                 node,
-                ast.Constant(value = mode, kind = None)
             ],
             keywords = []
         )
 
-        self._env["_da_call_transform"] = _da_call_transform
+        self.decorate([node])
+
+        self._env["_da_call_transform"] = None
         return node
 
 
@@ -269,10 +338,13 @@ class Snippet:
             self._insts = insts
         self.value = value
 
-    def addInst(self, inst: Inst) -> None:
+    def insts(self) -> typ.List[dal.Inst]:
+        return self._insts
+
+    def addInst(self, inst: dal.Inst) -> None:
         self._insts.append(inst)
 
-    def addInsts(self, insts: typ.List[Inst]) -> None:
+    def addInsts(self, insts: typ.List[dal.Inst]) -> None:
         for inst in insts:
             self._insts.append(inst)
 
@@ -285,7 +357,7 @@ def _da_as_arg(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
 
     assert isinstance(args, typ.List)
 
-    for inst in snippet.insts:
+    for inst in snippet.insts():
         args.append(inst)
 
     return snippet
@@ -330,14 +402,14 @@ def _da_expr_convert(insts: dal.InstGrp, o: object) -> typ.Any:
     and the PyObj directly.
     """
     if isinstance(o, core.Machine):
-        return _da_machine_convert(insts, o)
+        return _da_machine_transform(insts, o)
     elif isinstance(o, core.DType):
         return _da_oper_convert(insts, o)
 
     return o
 
 
-def _da_machine_convert(insts: dal.InstGrp, m: core.Machine) -> core.Machine:
+def _da_machine_transform(insts: dal.InstGrp, m: core.Machine) -> core.Machine:
     """
     Generate requirements
     """
@@ -383,7 +455,7 @@ def _da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
         # For example:
         #   box = BoxMachine()
         # It's a call but not an operation.
-        _da_machine_convert(insts, o)
+        _da_machine_transform(insts, o)
 
     op = o.compileInfo
     if op is None:
