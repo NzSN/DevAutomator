@@ -6,6 +6,7 @@ import DevAuto.Translator.ast_wrappers as wrapper
 
 class Wrapper_TC:
 
+    @pytest.mark.skip
     def test_Wrap_Expr_In_Func(self) -> None:
         node = ast.Constant(value=123, kind=None)
         ast.fix_missing_locations(node)

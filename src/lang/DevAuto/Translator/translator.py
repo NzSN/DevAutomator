@@ -8,7 +8,6 @@ import DevAuto.Core as core
 import DevAuto.lang_imp as dal
 import DevAuto.Translator.ast_wrappers as ast_wrapper
 
-
 class OUT_OF_IDENT(Exception):
 
     def __init__(self, ident: str) -> None:
@@ -74,25 +73,26 @@ class Translator:
                 args = [ ast.Name(id='insts', ctx = ast.Load()) ],
                 keywords = []))
         tree.body.append(expr)
+
         ast.fix_missing_locations(tree)
 
         return tree
 
-    def environmentInit(self, func: dal.DFunc, env: typ.Dict[str, typ.Any]) -> None:
+    def environmentInit(self, func: dal.DFunc) -> typ.Dict:
         env = func.env()
         env["insts"] = dal.InstGrp([], [], [])
         env["_da_expr_convert"] = _da_expr_convert
         env["_da_unwrap"] = _da_unwrap
         env["_da_as_arg"] = _da_as_arg
 
+        return env
+
     def trans(self, func: dal.DFunc) -> dal.InstGrp:
         """
         Transform a dal.DFunc into list of Insts.
         """
         pyfunc = func.body()
-        global_env = {}
-
-        self.environmentInit(func, global_env)
+        global_env = self.environmentInit(func)
 
         # Transform AST nodes
         ast_nodes = ast.parse(inspect.getsource(pyfunc))
@@ -102,6 +102,8 @@ class Translator:
         DA_NodeTransformer(global_env).visit(ast_nodes)
 
         self.preprocessing_after_transform(ast_nodes, [pyfunc.__name__])
+
+        astpretty.pprint(ast_nodes)
 
         # Transform from ast to List[Inst]
         exec(compile(ast_nodes, "", 'exec'), global_env, {})
@@ -153,12 +155,29 @@ class TransFlags:
             # Indicate that current expr is
             # argument of another expr
             self.ARGUMENT_AWAIT: False,
+
+            self.IF_TEST_EXPR: None
         }  # type: typ.Dict[str, typ.Any]
 
         self._stack = [copy.deepcopy(self._flagsDefault)]
 
+    def __enter__(self) -> None:
+        self._recursive_in()
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self._recursive_exit()
+
     def current(self) -> typ.Dict[str, typ.Any]:
         return self._stack[-1]
+
+    def get(self, key: str) -> typ.Any:
+        current = self.current()
+
+        if key in current:
+            return current[key]
+        else:
+            # TODO: Provide a more concrete exception
+            raise Exception("Key not found")
 
     def set(self, key: str, value: typ.Any) -> None:
         self.current()[key] = value
@@ -185,10 +204,13 @@ class TransFlags:
     def is_if_test(self) -> bool:
         return self.current()[self.IF_TEST_EXPR] == True
 
-    def recursive_in(self) -> None:
+    def recursive(self) -> 'TransFlags':
+        return self
+
+    def _recursive_in(self) -> None:
         self._stack.append(copy.deepcopy(self._flagsDefault))
 
-    def recursive_out(self) -> None:
+    def _recursive_exit(self) -> None:
         if len(self._stack) > 1:
             self._stack.pop()
         else:
@@ -209,15 +231,24 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         self._func_ident_gen = IdentGenerator("funcGen", "_lambda", 10000)
         self._flags = TransFlags()
 
-    def decorate(self, new_insts: typ.List[ast.AST]) -> None:
+    def decorate(self, node: ast.AST) -> typ.Optional[ast.AST]:
+
+        new = None
 
         if self._flags.is_arg_await():
             # New insts is as argument of another inst.
-            ...
-        if self._flags.is_if_test():
+            new = ast_wrapper.call(
+                ast.Name("_da_as_arg", ctx=ast.Load()),
+                [typ.cast(ast.expr, node)])
+
+        elif self._flags.is_if_test():
             # New insts is as condition expression of
             # an Jmpxx inst.
             ...
+        else:
+            return node
+
+        return new
 
     def visit_For(self, node):
         return node
@@ -234,30 +265,25 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         else_body_func_id = self._func_ident_gen.gen()
 
         # Wrap body of if stmt into functions
-        bodyDef = ast_wrapper.function_define(body_func_id, [], node.body)
-        elseBodyDef = ast_wrapper.function_define(
+        bodyDef = ast_wrapper.function_define_posonly(
+            body_func_id, [], node.body)
+        elseBodyDef = ast_wrapper.function_define_posonly(
             else_body_func_id, [], node.orelse)
 
         # Transform stmts in body and elsebody recursively.
         self.visit(bodyDef)
         self.visit(elseBodyDef)
 
-        ifCalling = ast.Expr(value=ast.Call(
-            func = ast.Call(
-                func = ast.Name("DIf", ctx = ast.Load()),
-                args = [
-                    ast.Name(id = "insts", ctx = ast.Load()),
-                    node.test,
-                    ast.Name(id = body_func_id, ctx = ast.Load()),
-                    ast.Name(id = else_body_func_id, ctx = ast.Load())
-                ],
-                keywords = []
+        ifCalling = ast_wrapper.call(
+            ast_wrapper.call(
+                ast.Name("DIf", ctx=ast.Load()),
+                [ast.Name(id="insts", ctx=ast.Load()),
+                 node.test,
+                 ast.Name(id=body_func_id, ctx=ast.Load()),
+                 ast.Name(id=else_body_func_id, ctx=ast.Load())]
             ),
-            args = [
-                ast.Name(id = "_da_if_convert", ctx = ast.Load())
-            ],
-            keywords = []
-        ))
+            [ast.Name(id="_da_if_convert", ctx=ast.Load())]
+        )
         ast.fix_missing_locations(ifCalling)
 
         self._env['DIf'] = dal.DIf
@@ -297,12 +323,11 @@ class DA_NodeTransTransform(ast.NodeTransformer):
 
         if len(node.args) > 0:
 
-            self._flags.recursive_in()
-            self._flags.arg_await()
-
             # Transform every argument of this call
             # into intermidiate form
-            args = [self.visit(arg) for arg in node.args]
+            with self._flags.recursive():
+                self._flags.arg_await()
+                args = [self.visit(arg) for arg in node.args]
 
             # Replace original arguments
             # with transformed arguments.
@@ -310,19 +335,17 @@ class DA_NodeTransTransform(ast.NodeTransformer):
 
         # To check that is any Operations is called
         # as arguments of this calling.
-        node = ast.Call(
-            func = ast.Name(id = "_da_call_transform", ctx = ast.Load()),
-            args = [
-                ast.Name(id = "insts", ctx = ast.Load()),
-                node,
-            ],
-            keywords = []
-        )
+        transform_node = typ.cast(ast.Call, ast_wrapper.parse_expr(
+            "_da_call_transform(insts)"))
+        transform_node.args.append(node)
 
-        self.decorate([node])
+        decorated_node = self.decorate(transform_node)
+        if decorated_node is None:
+            # TODO: Should provide a more precise exception.
+            raise Exception("Failed to decorate a call expression")
 
-        self._env["_da_call_transform"] = None
-        return node
+        self._env["_da_call_transform"] = _da_call_transform
+        return typ.cast(ast.Call, decorated_node)
 
 
 ###############################################################################

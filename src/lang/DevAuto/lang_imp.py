@@ -131,6 +131,11 @@ class InstGrp:
     explain which executor and duts is need.
     """
 
+    # Place to hold arguments of a call expression
+    ARG_HOLDER = 0
+    # Place to hold if stmt's test value
+    TEST_EXPR  = 1
+
     def __init__(self, insts: typ.List[Inst],
                  duts: typ.List[str],
                  executors: typ.List[str]) -> None:
@@ -138,7 +143,10 @@ class InstGrp:
         self._insts = insts
         self._duts = duts
         self._executors = executors
-        self.compileDict = {}
+        self.compileDict = {
+            self.ARG_HOLDER: [],
+            self.TEST_EXPR: None
+        }
 
     def setFlagT(self, flag: str) -> None:
         self.compileDict[flag] = True

@@ -63,6 +63,13 @@ def CallExpression_Case_1() -> bool:
 
     return True
 
+
+@DA.function(globals())
+def CallExpression_Case_2() -> bool:
+    box = BoxMachinePlus()
+    box.op(core.DStr("thing"))
+    return True
+
 @pytest.fixture
 def Tr() -> trans.Translator:
     return trans.Translator()
@@ -74,7 +81,26 @@ def CallExpression_Cases() -> typ.List[DFunc]:
     return tests
 
 
+@pytest.fixture
+def transFlags() -> trans.TransFlags:
+    return trans.TransFlags()
+
+
+
 class Tr_TC:
+
+    def test_TransFlags(self, transFlags: trans.TransFlags) -> None:
+        assert transFlags.get(transFlags.ARGUMENT_AWAIT) is False
+
+    def test_TransFlags_Recursive(self, transFlags: trans.TransFlags) -> None:
+
+        with transFlags.recursive():
+            assert transFlags.is_recursive_inner() is False
+            assert transFlags.get(transFlags.ARGUMENT_AWAIT) is False
+            transFlags.setTrue(transFlags.ARGUMENT_AWAIT)
+            assert transFlags.get(transFlags.ARGUMENT_AWAIT) is True
+
+        assert transFlags.get(transFlags.ARGUMENT_AWAIT) is False
 
     def test_Call_Expression_Transform(self, Tr, CallExpression_Cases) -> None:
         instgrp = Tr.trans(CallExpression_Cases[0])  # type: InstGrp
@@ -86,5 +112,4 @@ class Tr_TC:
         assert instgrp.duts() == ["Box"]
 
         insts = instgrp.insts()
-
         assert 1 == 2
