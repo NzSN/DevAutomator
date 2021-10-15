@@ -2,6 +2,7 @@ import pytest
 import typing as typ
 import DevAuto as DA
 import DevAuto.Core as core
+from DevAuto.Core import DStr
 import DevAuto.Translator.translator as trans
 import DevAuto.lang_imp as dal
 from DevAuto import DFunc
@@ -59,7 +60,7 @@ class BoxMachinePlus(BoxMachine, core.Dut):
 @DA.function(globals())
 def CallExpression_Case_1() -> bool:
     box = BoxMachinePlus()
-    box.op(box.query(core.DStr("thing")))
+    box.op(box.query(DStr("things")))
 
     return True
 
@@ -67,7 +68,7 @@ def CallExpression_Case_1() -> bool:
 @DA.function(globals())
 def CallExpression_Case_2() -> bool:
     box = BoxMachinePlus()
-    box.op(core.DStr("thing"))
+    box.op(DStr("thing"))
     return True
 
 @pytest.fixture
@@ -112,4 +113,5 @@ class Tr_TC:
         assert instgrp.duts() == ["Box"]
 
         insts = instgrp.insts()
-        assert 1 == 2
+        assert str(insts[0]) == "query [things] __VAR__0"
+        assert str(insts[1]) == "op [__VAR__0] __VAR__1"
