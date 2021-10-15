@@ -49,9 +49,9 @@ class Translator:
     def environmentInit(self, func: dal.DFunc) -> typ.Dict:
         env = func.env()
         env["insts"] = dal.InstGrp([], [], [])
-        env["_da_expr_convert"] = _da_expr_convert
-        env["_da_unwrap"] = _da_unwrap
-        env["_da_as_arg"] = _da_as_arg
+        env["da_expr_convert"] = da_expr_convert
+        env["da_unwrap"] = da_unwrap
+        env["da_as_arg"] = da_as_arg
 
         return env
 
@@ -205,7 +205,7 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         if self._flags.is_arg_await():
             # New insts is as argument of another inst.
             new = ast_wrapper.call(
-                ast.Name(id="_da_as_arg", ctx=ast.Load()),
+                ast.Name(id="da_as_arg", ctx=ast.Load()),
                 [ast.Name(id="insts", ctx=ast.Load()),
                  typ.cast(ast.expr, node)])
 
@@ -219,7 +219,7 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         # Unwrap snippet to provide it's value to
         # another expression.
         new = ast_wrapper.call(
-            ast.Name(id="_da_unwrap", ctx=ast.Load()),
+            ast.Name(id="da_unwrap", ctx=ast.Load()),
             [typ.cast(ast.expr, new)]
         )
 
@@ -257,12 +257,12 @@ class DA_NodeTransTransform(ast.NodeTransformer):
                  ast.Name(id=body_func_id, ctx=ast.Load()),
                  ast.Name(id=else_body_func_id, ctx=ast.Load())]
             ),
-            [ast.Name(id="_da_if_convert", ctx=ast.Load())]
+            [ast.Name(id="da_if_convert", ctx=ast.Load())]
         )
         ast.fix_missing_locations(ifCalling)
 
         self._env['DIf'] = dal.DIf
-        self._env['_da_if_convert'] = _da_if_convert
+        self._env['da_if_convert'] = da_if_convert
 
         return [bodyDef, elseBodyDef, ifCalling]
 
@@ -278,7 +278,7 @@ class DA_NodeTransTransform(ast.NodeTransformer):
 
         target = typ.cast(ast.Name, node.targets[0])
         node.value = ast.Call(
-            func = ast.Name(id = "_da_assign_convert", ctx = ast.Load()),
+            func = ast.Name(id = "da_assign_convert", ctx = ast.Load()),
             args = [
                 ast.Name(id = "insts", ctx = ast.Load()),
                 node.value,
@@ -288,7 +288,7 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         )
 
         # Environment updates
-        self._env["_da_assign_convert"] = _da_assign_convert
+        self._env["da_assign_convert"] = da_assign_convert
 
         return node
 
@@ -314,7 +314,7 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         # To check that is any Operations is called
         # as arguments of this calling.
         transform_node = typ.cast(ast.Call, ast_wrapper.parse_expr(
-            "_da_call_transform(insts)"))
+            "da_call_transform(insts)"))
         transform_node.args.append(node)
 
         decorated_node = self.decorate(transform_node)
@@ -322,12 +322,12 @@ class DA_NodeTransTransform(ast.NodeTransformer):
             # TODO: Should provide a more precise exception.
             raise Exception("Failed to decorate a call expression")
 
-        self._env["_da_call_transform"] = _da_call_transform
+        self._env["da_call_transform"] = da_call_transform
         return typ.cast(ast.Call, decorated_node)
 
 
 ###############################################################################
-#                          _da_xxx_transform functions                          #
+#                          da_xxx_transform functions                          #
 ###############################################################################
 class Snippet:
 
@@ -350,7 +350,7 @@ class Snippet:
             self._insts.append(inst)
 
 
-def _da_as_arg(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
+def da_as_arg(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
 
     args = insts.getFlag(insts.ARG_HOLDER)
     assert isinstance(args, typ.List)
@@ -361,11 +361,11 @@ def _da_as_arg(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
     return snippet
 
 
-def _da_unwrap(snippet: Snippet) -> typ.Any:
+def da_unwrap(snippet: Snippet) -> typ.Any:
     return snippet.value
 
 
-def _da_assign_convert(insts: dal.InstGrp, o: object, target: str) -> typ.Any:
+def da_assign_convert(insts: dal.InstGrp, o: object, target: str) -> typ.Any:
 
     if not isinstance(o, core.Machine) and \
        not isinstance(o, core.DType):
@@ -375,7 +375,7 @@ def _da_assign_convert(insts: dal.InstGrp, o: object, target: str) -> typ.Any:
     instCount = len(insts)
 
     # Convert right expr into Inst
-    retValue = _da_expr_convert(insts, o)
+    retValue = da_expr_convert(insts, o)
 
     # A new inst is generate
     # there should only one inst is generated
@@ -395,20 +395,20 @@ def _da_assign_convert(insts: dal.InstGrp, o: object, target: str) -> typ.Any:
 
     return retValue
 
-def _da_expr_convert(insts: dal.InstGrp, o: object) -> typ.Any:
+def da_expr_convert(insts: dal.InstGrp, o: object) -> typ.Any:
     """
     Convert DaObj into insts. If o is a PyObj then do nothing
     and the PyObj directly.
     """
     if isinstance(o, core.Machine):
-        return _da_machine_transform(insts, o)
+        return da_machine_transform(insts, o)
     elif isinstance(o, core.DType):
-        return _da_oper_convert(insts, o)
+        return da_oper_convert(insts, o)
 
     return o
 
 
-def _da_machine_transform(insts: dal.InstGrp, m: core.Machine) -> core.Machine:
+def da_machine_transform(insts: dal.InstGrp, m: core.Machine) -> core.Machine:
     """
     Generate requirements
     """
@@ -429,20 +429,20 @@ def _da_machine_transform(insts: dal.InstGrp, m: core.Machine) -> core.Machine:
 ###############################################################################
 #                          Call Expression Transform                          #
 ###############################################################################
-class _DA_CALL_TRANSFORM_NO_ARGS_FOUND(Exception):
+class DA_CALL_TRANSFORM_NO_ARGS_FOUND(Exception):
 
     def __str__(self) -> str:
         return "No argument found"
 
 
-class _DA_CALL_TRANSFORM_ARGS_MISMATCH(Exception):
+class DA_CALL_TRANSFORM_ARGS_MISMATCH(Exception):
 
     def __str__(self) -> str:
         return "argument mismatch"
 
 
 
-def _da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
+def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
 
     snippet = Snippet(value=o)
 
@@ -454,7 +454,7 @@ def _da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
         # For example:
         #   box = BoxMachine()
         # It's a call but not an operation.
-        _da_machine_transform(insts, o)
+        da_machine_transform(insts, o)
 
     op = o.compileInfo
 
@@ -474,9 +474,9 @@ def _da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
         args = insts.getFlag(insts.ARG_HOLDER)
 
         if args is None:
-            raise _DA_CALL_TRANSFORM_NO_ARGS_FOUND()
+            raise DA_CALL_TRANSFORM_NO_ARGS_FOUND()
         if len(args) != argv:
-            raise _DA_CALL_TRANSFORM_ARGS_MISMATCH()
+            raise DA_CALL_TRANSFORM_ARGS_MISMATCH()
 
         insts.setFlagWith(insts.ARG_HOLDER, [])
 
@@ -493,7 +493,7 @@ def _da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
     return snippet
 
 
-def _da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
+def da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
     op = val.compileInfo
     assert isinstance(op, core.Operation)
 
@@ -506,14 +506,14 @@ def _da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
     return val
 
 
-def _da_if_convert(insts: dal.InstGrp, ifStmt: dal.DIf) -> None:
+def da_if_convert(insts: dal.InstGrp, ifStmt: dal.DIf) -> None:
     cond = ifStmt.cond()
 
     if isinstance(cond, bool):
         return
 
 
-def _da_equal_convert(
+def da_equal_convert(
         insts: dal.InstGrp,
         loperand: ast.expr,
         roperand: ast.expr) -> typ.Union[bool, core.DBool]:
