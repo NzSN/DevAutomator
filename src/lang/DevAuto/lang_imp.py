@@ -1,5 +1,6 @@
 import typing as typ
 import DevAuto.Core as core
+from DevAuto.utility import *
 
 T = typ.TypeVar("T")
 
@@ -12,6 +13,9 @@ class Var:
         """
         self.ident = ident
         self.value = value
+
+    def __str__(self) -> str:
+        return self.ident
 
     def __eq__(self, o: 'Var') -> core.DBool:
         return core.DBool(self.ident == o.ident)
@@ -60,6 +64,11 @@ class OInst(Inst):
         return core.DBool(self._opcode == o.opcode()) and \
             self._args == o.args() and \
             self._ret == o.ret()
+
+    def __str__(self) -> str:
+        return self._opcode + " [" +  \
+            " ".join([str(arg) for arg in self._args]) + \
+            "] " + self._ret.ident
 
 
 class VInst(Inst):
@@ -125,6 +134,19 @@ class Equal(VInst):
         VInst.__init__(self, l, r)
 
 
+class Def(VInst):
+
+    def __init__(self, ident: str, value: str) -> None:
+        self._ident = ident
+        self._value = value
+
+    def ident(self) -> str:
+        return self._ident
+
+    def value(self) -> str:
+        return self._value
+
+
 class InstGrp:
     """
     InstGrp is a list of Insts with extra informations that
@@ -132,9 +154,11 @@ class InstGrp:
     """
 
     # Place to hold arguments of a call expression
-    ARG_HOLDER = 0
+    ARG_HOLDER = "AH"
     # Place to hold if stmt's test value
-    TEST_EXPR  = 1
+    TEST_EXPR  = "TE"
+    # Variable identifier generator
+    VAR_ID_GEN = "VIG"
 
     def __init__(self, insts: typ.List[Inst],
                  duts: typ.List[str],
@@ -145,7 +169,8 @@ class InstGrp:
         self._executors = executors
         self.compileDict = {
             self.ARG_HOLDER: [],
-            self.TEST_EXPR: None
+            self.TEST_EXPR: None,
+            self.VAR_ID_GEN: IdentGenerator("VarGen", "__VAR_", 10000)
         }
 
     def setFlagT(self, flag: str) -> None:
