@@ -2,9 +2,9 @@ import abc
 import typing as typ
 from DevAuto.Core.devCoreExcep import DBOOL_IS_NOT_IN_VALID_FORM
 from collections import namedtuple
-from collections.abc import MutableSequence
+from collections.abc import MutableSequence, Iterable
 
-
+pyType = typ.TypeVar('pyType')
 PropVal = typ.Union[typ.List[str], typ.Mapping[str, str]]
 
 
@@ -106,7 +106,8 @@ DListElemType = typ.TypeVar('DListElemType')
 
 class DList(DType,
             typ.Generic[DListElemType],
-            MutableSequence):
+            MutableSequence,
+            Iterable):
 
     def __init__(self, value: typ.List[DListElemType] = None) -> None:
         MutableSequence.__init__(self)
@@ -115,6 +116,20 @@ class DList(DType,
         if value is None:
             value = []
         self._value = value
+        self._idx = 0
+
+    def __iter__(self) -> 'DList':
+        self._idx = 0
+        return self
+
+    def __next__(self) -> DListElemType:
+        idx = self._idx
+        self._idx += 1
+
+        if idx == len(self._value):
+            raise StopIteration()
+
+        return self._value[idx]
 
     def __getitem__(self, index: int) -> typ.Any:
         """
@@ -138,11 +153,6 @@ class DList(DType,
 
     def __contains__(self, x: DListElemType) -> bool:
         return True
-
-    def __iter__(self) -> typ.Iterator[DListElemType]:
-        """
-        Pending
-        """
 
     def __len__(self) -> int:
         return 0
