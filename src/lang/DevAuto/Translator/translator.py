@@ -2,11 +2,13 @@ import ast
 import astor
 import copy
 import inspect
+import astpretty
 import typing as typ
 import DevAuto.transFlags as flags
 import DevAuto.Core as core
 import DevAuto.lang_imp as dal
 import DevAuto.Translator.ast_wrappers as ast_wrapper
+import DevAuto.Translator.transform as trFuncs
 from DevAuto.utility import *
 
 
@@ -49,9 +51,10 @@ class Translator:
     def environmentInit(self, func: dal.DFunc) -> typ.Dict:
         env = func.env()
         env["insts"] = dal.InstGrp([], [], [])
-        env["da_expr_convert"] = da_expr_convert
-        env["da_unwrap"] = da_unwrap
-        env["da_as_arg"] = da_as_arg
+        env["da_expr_convert"] = trFuncs.da_expr_convert
+        env["da_unwrap"] = trFuncs.da_unwrap
+        env["da_as_arg"] = trFuncs.da_as_arg
+        env["da_as_assign_value"] = trFuncs.da_as_assign_value
 
         return env
 
@@ -70,6 +73,7 @@ class Translator:
 
         self.preprocessing_after_transform(ast_nodes, [pyfunc.__name__])
 
+        # TODO: Remove ast tree print
         print(astor.to_source(ast_nodes))
 
         # Transform from ast to List[Inst]
@@ -116,6 +120,7 @@ class TransFlags:
 
     ARGUMENT_AWAIT = "arg"
     IF_TEST_EXPR = "ITE"
+    ASSIGNMENT_STMT = "AS"
 
     def __init__(self) -> None:
         self._flagsDefault = {
@@ -123,7 +128,8 @@ class TransFlags:
             # argument of another expr
             self.ARGUMENT_AWAIT: False,
 
-            self.IF_TEST_EXPR: None
+            self.IF_TEST_EXPR: None,
+            self.ASSIGNMENT_STMT: False
         }  # type: typ.Dict[str, typ.Any]
 
         self._stack = [copy.deepcopy(self._flagsDefault)]
@@ -164,6 +170,12 @@ class TransFlags:
         provide subexpr's value to parent.
         """
         self.setTrue(self.ARGUMENT_AWAIT)
+
+    def in_assign_proc(self) -> None:
+        self.setTrue(self.ASSIGNMENT_STMT)
+
+    def is_in_assign_proc(self) -> bool:
+        return self.get(self.ASSIGNMENT_STMT) == True
 
     def is_arg_await(self) -> bool:
         return self.current()[self.ARGUMENT_AWAIT] == True
@@ -213,6 +225,12 @@ class DA_NodeTransTransform(ast.NodeTransformer):
             # New insts is as condition expression of
             # an Jmpxx inst.
             ...
+        elif self._flags.is_in_assign_proc():
+            new = ast_wrapper.call(
+                ast.Name(id="da_as_assign_value", ctx=ast.Load()),
+                [ast.Name(id="insts", ctx=ast.Load()),
+                 typ.cast(ast.expr, node)]
+            )
         else:
             return node
 
@@ -262,7 +280,7 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         ast.fix_missing_locations(ifCalling)
 
         self._env['DIf'] = dal.DIf
-        self._env['da_if_convert'] = da_if_convert
+        self._env['da_if_convert'] = trFuncs.da_if_convert
 
         return [bodyDef, elseBodyDef, ifCalling]
 
@@ -272,25 +290,44 @@ class DA_NodeTransTransform(ast.NodeTransformer):
     def visit_BinOp(self, node):
         return node
 
-    def visit_Assign(self, node: ast.Assign) -> ast.Assign:
+    def visit_Assign(self, node: ast.Assign) -> typ.List[ast.AST]:
         if len(node.targets) > 1:
             raise Exception("Multiple assign is not supported")
 
-        target = typ.cast(ast.Name, node.targets[0])
-        node.value = ast.Call(
-            func = ast.Name(id = "da_assign_convert", ctx = ast.Load()),
-            args = [
-                ast.Name(id = "insts", ctx = ast.Load()),
-                node.value,
-                ast.Constant(value = target.id, kind = None)
-            ],
-            keywords = []
-        )
+        target_nodes = None
+        value_nodes = None
+
+        # Transform target and value
+        with self._flags.recursive():
+
+            # Switch into assign proc mode
+            self._flags.in_assign_proc()
+
+            target_nodes = self.visit(node.targets[0])
+            value_nodes = self.visit(node.value)
+
+        if target_nodes is None or \
+           value_nodes is None:
+            return [node]
+
+        assign = typ.cast(ast.Assign, ast_wrapper.parse_stmt("v = 0"))
+        assign.targets = [target_nodes]
+        assign.value = value_nodes
+
+        target_load = copy.deepcopy(target_nodes)
+        target_load.ctx = ast.Load()
+        target_ident = target_load.id
+
+        call_expr = ast.Expr(value=ast_wrapper.call(
+            ast.Name(id="da_assign_transform", ctx=ast.Load()),
+            [ast.Name(id="insts", ctx=ast.Load()),
+             ast.Constant(value=target_ident),
+             target_load]))
 
         # Environment updates
-        self._env["da_assign_convert"] = da_assign_convert
+        self._env["da_assign_transform"] = trFuncs.da_assign_transform
 
-        return node
+        return [assign, call_expr]
 
     def visit_Constant(self, node: ast.Constant) -> ast.Constant:
         return node
@@ -322,221 +359,5 @@ class DA_NodeTransTransform(ast.NodeTransformer):
             # TODO: Should provide a more precise exception.
             raise Exception("Failed to decorate a call expression")
 
-        self._env["da_call_transform"] = da_call_transform
+        self._env["da_call_transform"] = trFuncs.da_call_transform
         return typ.cast(ast.Call, decorated_node)
-
-
-###############################################################################
-#                          da_xxx_transform functions                          #
-###############################################################################
-class Snippet:
-
-    def __init__(self, insts: typ.List[typ.Any] = None, value: typ.Any = None) -> None:
-
-        if insts is None:
-            self._insts = []
-        else:
-            self._insts = insts
-        self.value = value
-
-    def insts(self) -> typ.List[dal.Inst]:
-        return self._insts
-
-    def addInst(self, inst: dal.Inst) -> None:
-        self._insts.append(inst)
-
-    def addInsts(self, insts: typ.List[dal.Inst]) -> None:
-        for inst in insts:
-            self._insts.append(inst)
-
-
-def da_as_arg(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
-
-    args = insts.getFlag(insts.ARG_HOLDER)
-    assert isinstance(args, typ.List)
-
-    for inst in snippet.insts():
-        args.append(inst)
-
-    return snippet
-
-
-def da_unwrap(snippet: Snippet) -> typ.Any:
-    return snippet.value
-
-
-def da_assign_convert(insts: dal.InstGrp, o: object, target: str) -> typ.Any:
-
-    if not isinstance(o, core.Machine) and \
-       not isinstance(o, core.DType):
-
-        return o
-
-    instCount = len(insts)
-
-    # Convert right expr into Inst
-    retValue = da_expr_convert(insts, o)
-
-    # A new inst is generate
-    # there should only one inst is generated
-    if instCount + 1 == len(insts):
-
-        # Add target to the last generated operation
-        inst = insts[-1]
-
-        # Only support Operation Instructions
-        assert(isinstance(inst, dal.OInst))
-
-        ret = inst.ret()
-        ret.ident = target
-    elif instCount == len(insts):
-        # It must a Dut or Executor initializes
-        return o
-
-    return retValue
-
-def da_expr_convert(insts: dal.InstGrp, o: object) -> typ.Any:
-    """
-    Convert DaObj into insts. If o is a PyObj then do nothing
-    and the PyObj directly.
-    """
-    if isinstance(o, core.Machine):
-        return da_machine_transform(insts, o)
-    elif isinstance(o, core.DType):
-        return da_oper_convert(insts, o)
-
-    return o
-
-
-def da_machine_transform(insts: dal.InstGrp, m: core.Machine) -> core.Machine:
-    """
-    Generate requirements
-    """
-    if isinstance(m, core.Executors):
-        insts.addExecutor(m.ident())
-    elif isinstance(m, core.Dut):
-        insts.addDut(m.ident())
-    else:
-        """
-        A machine without extra identity
-        """
-        ...
-
-    return m
-
-
-
-###############################################################################
-#                          Call Expression Transform                          #
-###############################################################################
-class DA_CALL_TRANSFORM_NO_ARGS_FOUND(Exception):
-
-    def __str__(self) -> str:
-        return "No argument found"
-
-
-class DA_CALL_TRANSFORM_ARGS_MISMATCH(Exception):
-
-    def __str__(self) -> str:
-        return "argument mismatch"
-
-
-
-def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
-
-    snippet = Snippet(value=o)
-
-    if not isinstance(o, core.DType):
-        # Value that is computable in python layer
-        return o
-    elif isinstance(o, core.Machine):
-        # Need to generate Dut, Executor description.
-        # For example:
-        #   box = BoxMachine()
-        # It's a call but not an operation.
-        da_machine_transform(insts, o)
-
-    op = o.compileInfo
-
-    if op is None:
-        # A DA Constant
-        snippet.insts().append(o.value())
-        return snippet
-
-    assert isinstance(op, core.Operation)
-
-    opInfo = op.op()
-    args = []
-    argv = len(opInfo.opargs)
-
-    # Get Arguments if need
-    if argv > 0:
-        args = insts.getFlag(insts.ARG_HOLDER)
-
-        if args is None:
-            raise DA_CALL_TRANSFORM_NO_ARGS_FOUND()
-        if len(args) != argv:
-            raise DA_CALL_TRANSFORM_ARGS_MISMATCH()
-
-        insts.setFlagWith(insts.ARG_HOLDER, [])
-
-    retVar = insts.compileDict[insts.VAR_ID_GEN].gen()
-
-    op_inst = dal.OInst(
-        opInfo.opcode,
-        core.DList(args),
-        dal.Var(retVar)
-    )
-    insts.addInst(op_inst)
-    snippet.addInst(retVar)
-
-    return snippet
-
-
-def da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
-    op = val.compileInfo
-    assert isinstance(op, core.Operation)
-
-    opInfos = op.op()
-    op_inst = dal.OInst(
-        opInfos.opcode,
-        core.DList(opInfos.opargs),
-        dal.Var(""))
-    insts.addInst(op_inst)
-    return val
-
-
-def da_if_convert(insts: dal.InstGrp, ifStmt: dal.DIf) -> None:
-    cond = ifStmt.cond()
-
-    if isinstance(cond, bool):
-        return
-
-
-def da_equal_convert(
-        insts: dal.InstGrp,
-        loperand: ast.expr,
-        roperand: ast.expr) -> typ.Union[bool, core.DBool]:
-
-    # Setup transform flags
-    insts.setFlagT(flags.IN_IF_COND_TRANS)
-    insts.setFlagF(flags.IF_COND_COMPUTEABLE_IN_PYTHON)
-    insts.unsetFlag(flags.IF_COND_BOOLEAN_VALUE)
-
-    test_ret = loperand == roperand
-
-    if isinstance(test_ret, bool):
-        insts.setFlagT(flags.IF_COND_COMPUTEABLE_IN_PYTHON)
-        return test_ret
-    elif isinstance(test_ret, core.DBool):
-
-        if test_ret.isValidForm():
-            # It's value is computable in python layer
-            insts.setFlagT(flags.IF_COND_COMPUTEABLE_IN_PYTHON)
-            return test_ret
-
-        # DBool is not computable so need to generate
-        # insts to get the boolean value of the test
-        # condition.
-
-    return True

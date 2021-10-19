@@ -147,6 +147,19 @@ class Def(VInst):
         return self._value
 
 
+class Assign(VInst):
+
+    def __init__(self, ident: str, value: str) -> None:
+        self._ident = ident
+        self._value = value
+
+    def ident(self) -> str:
+        return self._ident
+
+    def value(self) -> str:
+        return self._value
+
+
 class InstGrp:
     """
     InstGrp is a list of Insts with extra informations that
@@ -155,8 +168,10 @@ class InstGrp:
 
     # Place to hold arguments of a call expression
     ARG_HOLDER = "AH"
+
     # Place to hold if stmt's test value
     TEST_EXPR  = "TE"
+
     # Variable identifier generator
     VAR_ID_GEN = "VIG"
 
