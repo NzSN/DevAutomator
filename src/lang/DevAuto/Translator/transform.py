@@ -1,11 +1,35 @@
 # TODO: Need to setup DType.TransformInfos during transforming.
 
-
 import ast
 import typing as typ
 import DevAuto.Core as core
 import DevAuto.lang_imp as dal
 import DevAuto.transFlags as flags
+
+
+class TransformInfos:
+
+    def __init__(self) -> None:
+
+        # Indicate that was a Machine Operation
+        # already Transformed
+        self._transformed = False
+
+        # Place to hold Variable that hold an
+        # Machine Operation's result.
+        self._op_ret = None  # type: typ.Union[None, dal.Var]
+
+    def transformed(self) -> None:
+        self._transformed = True
+
+    def is_transformed(self) -> bool:
+        return self._transformed is True
+
+    def op_ret(self) -> typ.Union[None, dal.Var]:
+        return self._op_ret
+
+    def set_op_ret(self, ret: dal.Var) -> None:
+        self._op_ret = ret
 
 
 class Snippet:
@@ -64,6 +88,21 @@ def da_unwrap(o: typ.Any) -> typ.Any:
 ###############################################################################
 #                             Transform Functions                             #
 ###############################################################################
+def da_transform_check(o: object) -> bool:
+
+    # If the operation was already transformed
+    if isinstance(o, core.DType):
+        infos = o.transInfo
+
+        if infos is None:
+            # A DA Constant
+            return True
+        elif infos.is_transformed():
+            return False
+
+    return True
+
+
 def da_name_transform(insts: dal.InstGrp, n: typ.Any) -> Snippet:
     s = Snippet(value=n)
 
@@ -162,8 +201,7 @@ class DA_CALL_TRANSFORM_ARGS_MISMATCH(Exception):
         return "argument mismatch"
 
 
-
-def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
+def da_call_not_operation(insts: dal.InstGrp, o: typ.Any) -> typ.Optional[Snippet]:
 
     snippet = Snippet(value=o)
 
@@ -178,6 +216,8 @@ def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
         # Value that is computable in python layer
         return snippet
 
+    assert(isinstance(o, core.DType))
+
     op = o.compileInfo
     transInfos = o.transInfo
 
@@ -187,16 +227,20 @@ def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
         snippet.insts().append(o.value())
         return snippet
 
-    # Make sure the operation was not transformed.
-    if transInfos.is_transformed():
-        # The operation was already been transformed
-        # so just need to return it's result.
-        var_ident = transInfos.op_ret()
-        assert(var_ident is not None)
-        snippet.addInst(var_ident)
+    return None
 
+
+def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
+
+    snippet = da_call_not_operation(insts, o)
+    if not snippet is None:
         return snippet
 
+    snippet = Snippet(value=o)
+
+    op, transInfos = o.compileInfo, o.transInfo
+
+    assert(isinstance(transInfos, TransformInfos))
     assert isinstance(op, core.Operation)
 
     opInfo = op.op()
@@ -215,14 +259,18 @@ def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
         insts.setFlagWith(insts.ARG_HOLDER, [])
 
     retVar = insts.compileDict[insts.VAR_ID_GEN].gen()
+    var = dal.Var(retVar)
 
     op_inst = dal.OInst(
         opInfo.opcode,
         core.DList(args),
-        dal.Var(retVar)
+        var
     )
     insts.addInst(op_inst)
     snippet.addInst(retVar)
+
+    transInfos.set_op_ret(var)
+    transInfos.transformed()
 
     return snippet
 

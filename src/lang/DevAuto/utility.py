@@ -33,22 +33,3 @@ class IdentGenerator:
 
     def set_max(self, max: int) -> None:
         self._max = max
-
-
-class TransformInfos:
-
-    def __init__(self) -> None:
-
-        # Indicate that was a Machine Operation
-        # already Transformed
-        self._transformed = False
-
-        # Place to hold Variable that hold an
-        # Machine Operation's result.
-        self._op_ret = None  # type: typ.Union[None, str]
-
-    def is_transformed(self) -> bool:
-        return self._transformed is True
-
-    def op_ret(self) -> typ.Union[None, str]:
-        return self._op_ret
