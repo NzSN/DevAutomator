@@ -159,6 +159,8 @@ class Assign(VInst):
     def value(self) -> str:
         return self._value
 
+    def __str__(self) -> str:
+        return "assign " + str(self._ident) + " " + str(self._value)
 
 class InstGrp:
     """
