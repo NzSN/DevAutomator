@@ -226,11 +226,10 @@ class DA_NodeTransTransform(ast.NodeTransformer):
             # an Jmpxx inst.
             ...
         elif self._flags.is_in_assign_proc():
-            new = ast_wrapper.call(
-                ast.Name(id="da_as_assign_value", ctx=ast.Load()),
-                [ast.Name(id="insts", ctx=ast.Load()),
-                 typ.cast(ast.expr, node)]
-            )
+            # Do nothing cause rvalue's info is
+            # contained in TransformInfos. Just need
+            # to unwrap value from Snippet.
+            new = node
         else:
             return node
 
@@ -284,52 +283,29 @@ class DA_NodeTransTransform(ast.NodeTransformer):
 
         return [bodyDef, elseBodyDef, ifCalling]
 
+    def visit_Name(self, node: ast.Name) -> ast.AST:
+        call_expr = ast_wrapper.call(ast.Name(id="da_name_transform", ctx=ast.Load()),
+                         [ast.Name(id="insts", ctx=ast.Load()), node])
+        decor_node = self.decorate(call_expr)
+        if decor_node is None:
+            # TODO: Should provide a more precise exception
+            raise Exception("Failed to decorate a NamedExpr")
+        self._env["da_name_transform"] = trFuncs.da_name_transform
+        return decor_node
+
     def visit_Return(self, node):
         return node
 
     def visit_BinOp(self, node):
         return node
 
-    def visit_Assign(self, node: ast.Assign) -> typ.List[ast.AST]:
-        if len(node.targets) > 1:
-            raise Exception("Multiple assign is not supported")
-
-        target_nodes = None
-        value_nodes = None
-
-        # Transform target and value
-        with self._flags.recursive():
-
-            # Switch into assign proc mode
-            self._flags.in_assign_proc()
-
-            target_nodes = self.visit(node.targets[0])
-            value_nodes = self.visit(node.value)
-
-        if target_nodes is None or \
-           value_nodes is None:
-            return [node]
-
-        assign = typ.cast(ast.Assign, ast_wrapper.parse_stmt("v = 0"))
-        assign.targets = [target_nodes]
-        assign.value = value_nodes
-
-        target_load = copy.deepcopy(target_nodes)
-        target_load.ctx = ast.Load()
-        target_ident = target_load.id
-
-        call_expr = ast.Expr(value=ast_wrapper.call(
-            ast.Name(id="da_assign_transform", ctx=ast.Load()),
-            [ast.Name(id="insts", ctx=ast.Load()),
-             ast.Constant(value=target_ident),
-             target_load]))
-
-        # Environment updates
-        self._env["da_assign_transform"] = trFuncs.da_assign_transform
-
-        return [assign, call_expr]
-
     def visit_Constant(self, node: ast.Constant) -> ast.Constant:
+        return node
+
+    def visit_Assign(self, node: ast.Assign) -> ast.Assign:
+        with self._flags.recursive():
+            self._flags.in_assign_proc()
+            node.value = self.visit(node.value)
         return node
 
     def visit_Call(self, node: ast.Call) -> ast.Call:

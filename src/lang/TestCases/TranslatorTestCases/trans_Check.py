@@ -89,6 +89,7 @@ def CallExpression_Cases() -> typ.List[DFunc]:
 def AssignStmts_Case_1() -> bool:
     box = BoxMachinePlus()
     info = box.query(DStr("things"))
+    box.op(info)
     return True
 
 
@@ -160,4 +161,7 @@ class Tr_TC:
         #instgrp_3 = Tr.trans(Case_3)
 
         # Verify
-        assert 1 == 2
+        assert [str(inst) for inst in instgrp_1.insts()] == [
+            "query [things] __VAR__0",
+            "op [__VAR__0] __VAR__1"
+        ]

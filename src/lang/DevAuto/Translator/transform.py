@@ -1,3 +1,6 @@
+# TODO: Need to setup DType.TransformInfos during transforming.
+
+
 import ast
 import typing as typ
 import DevAuto.Core as core
@@ -18,7 +21,7 @@ class Snippet:
     def insts(self) -> typ.List[dal.Inst]:
         return self._insts
 
-    def addInst(self, inst: dal.Inst) -> None:
+    def addInst(self, inst: str) -> None:
         self._insts.append(inst)
 
     def addInsts(self, insts: typ.List[dal.Inst]) -> None:
@@ -50,13 +53,38 @@ def da_as_assign_value(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
     return snippet
 
 
-def da_unwrap(snippet: Snippet) -> typ.Any:
-    return snippet.value
+def da_unwrap(o: typ.Any) -> typ.Any:
+
+    if isinstance(o, Snippet):
+        return o.value
+    else:
+        return o
 
 
 ###############################################################################
 #                             Transform Functions                             #
 ###############################################################################
+def da_name_transform(insts: dal.InstGrp, n: typ.Any) -> Snippet:
+    s = Snippet(value=n)
+
+    if not isinstance(n, core.DType):
+        return s
+    else:
+
+        if n.compileInfo is None or \
+           n.transInfo is None:
+
+            return s
+
+        ret = n.transInfo.op_ret()
+        if ret is None:
+            raise Exception("da_name_transform: ret not found")
+
+        s.addInst(ret)
+
+    return s
+
+
 def da_assign_transform(insts: dal.InstGrp, target_ident: str, target: object) -> None:
     """
     Transform assignment into Instructions if need.
@@ -83,7 +111,7 @@ def da_assign_transform(insts: dal.InstGrp, target_ident: str, target: object) -
 
         # otherwise it's a Machine Operation then redirect it's
         # result to a DA Variable in DAL layer.
-        insts.addInst(dal.Assign(target_ident, value_expr_var))
+        insts.addInst(dal.Assign(target_ident, value_expr_var[0]))
 
     return
 
@@ -151,10 +179,22 @@ def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
         return snippet
 
     op = o.compileInfo
+    transInfos = o.transInfo
 
-    if op is None:
+    if op is None or \
+       transInfos is None:
         # A DA Constant
         snippet.insts().append(o.value())
+        return snippet
+
+    # Make sure the operation was not transformed.
+    if transInfos.is_transformed():
+        # The operation was already been transformed
+        # so just need to return it's result.
+        var_ident = transInfos.op_ret()
+        assert(var_ident is not None)
+        snippet.addInst(var_ident)
+
         return snippet
 
     assert isinstance(op, core.Operation)
