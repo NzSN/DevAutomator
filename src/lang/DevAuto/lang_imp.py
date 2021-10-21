@@ -15,7 +15,7 @@ class Var:
         self.value = value
 
     def __str__(self) -> str:
-        return self.ident
+        return "<" + self.ident + ">"
 
     def __eq__(self, o: 'Var') -> core.DBool:
         return core.DBool(self.ident == o.ident)
@@ -68,7 +68,7 @@ class OInst(Inst):
     def __str__(self) -> str:
         return self._opcode + " [" +  \
             " ".join([str(arg) for arg in self._args]) + \
-            "] " + self._ret.ident
+            "] " + str(self._ret)
 
 
 class VInst(Inst):

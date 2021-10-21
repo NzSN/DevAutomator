@@ -95,6 +95,7 @@ def AssignStmts_Case_1() -> bool:
 
 @DA.function(globals())
 def AssignStmts_Case_2() -> bool:
+    box = BoxMachinePlus()
     info = 1
     return True
 
@@ -111,6 +112,10 @@ def AssignStmts_Cases() -> typ.List[DFunc]:
     return [AssignStmts_Case_1, AssignStmts_Case_2, AssignStmts_Case_3]
 
 
+###############################################################################
+#                            If Statement Fixtures                            #
+###############################################################################
+
 
 ###############################################################################
 #                                     Misc                                    #
@@ -125,6 +130,10 @@ def Tr() -> trans.Translator:
     return trans.Translator()
 
 
+
+###############################################################################
+#                                  Test Cases                                 #
+###############################################################################
 class Tr_TC:
 
     def test_TransFlags(self, transFlags: trans.TransFlags) -> None:
@@ -150,18 +159,25 @@ class Tr_TC:
         assert instgrp.duts() == ["Box"]
 
         insts = instgrp.insts()
-        assert str(insts[0]) == "query [things] __VAR__0"
-        assert str(insts[1]) == "op [__VAR__0] __VAR__1"
+        assert str(insts[0]) == "query [things] <__VAR__0>"
+        assert str(insts[1]) == "op [<__VAR__0>] <__VAR__1>"
 
     def test_Assign_Stmt_Transform(self, Tr, AssignStmts_Cases) -> None:
         Case_1, Case_2, Case_3 = AssignStmts_Cases
 
         instgrp_1 = Tr.trans(Case_1)
-        #instgrp_2 = Tr.trans(Case_2)
-        #instgrp_3 = Tr.trans(Case_3)
+        instgrp_2 = Tr.trans(Case_2)
+        instgrp_3 = Tr.trans(Case_3)
 
         # Verify
+        assert instgrp_1.duts() == ["Box"]
         assert [str(inst) for inst in instgrp_1.insts()] == [
-            "query [things] __VAR__0",
-            "op [__VAR__0] __VAR__1"
+            "query [things] <__VAR__0>",
+            "op [<__VAR__0>] <__VAR__1>"
         ]
+
+        assert instgrp_2.duts() == ["Box"]
+        assert instgrp_2.insts() == []
+
+        assert instgrp_3.duts() == ["Box"]
+        assert instgrp_3.insts() == []
