@@ -5,31 +5,7 @@ import typing as typ
 import DevAuto.Core as core
 import DevAuto.lang_imp as dal
 import DevAuto.transFlags as flags
-
-
-class TransformInfos:
-
-    def __init__(self) -> None:
-
-        # Indicate that was a Machine Operation
-        # already Transformed
-        self._transformed = False
-
-        # Place to hold Variable that hold an
-        # Machine Operation's result.
-        self._op_ret = None  # type: typ.Union[None, dal.Var]
-
-    def transformed(self) -> None:
-        self._transformed = True
-
-    def is_transformed(self) -> bool:
-        return self._transformed is True
-
-    def op_ret(self) -> typ.Union[None, dal.Var]:
-        return self._op_ret
-
-    def set_op_ret(self, ret: dal.Var) -> None:
-        self._op_ret = ret
+from .trans_utilities import TransformInfos
 
 
 class Snippet:
@@ -45,7 +21,7 @@ class Snippet:
     def insts(self) -> typ.List[dal.Inst]:
         return self._insts
 
-    def addInst(self, inst: str) -> None:
+    def addInst(self, inst: typ.Union[dal.Var, str]) -> None:
         self._insts.append(inst)
 
     def addInsts(self, insts: typ.List[dal.Inst]) -> None:
@@ -219,10 +195,8 @@ def da_call_not_operation(insts: dal.InstGrp, o: typ.Any) -> typ.Optional[Snippe
     assert(isinstance(o, core.DType))
 
     op = o.compileInfo
-    transInfos = o.transInfo
 
-    if op is None or \
-       transInfos is None:
+    if op is None:
         # A DA Constant
         snippet.insts().append(o.value())
         return snippet
@@ -238,10 +212,13 @@ def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
 
     snippet = Snippet(value=o)
 
-    op, transInfos = o.compileInfo, o.transInfo
+    assert(isinstance(o, core.DType))
+
+    op = o.compileInfo
+    transInfos = o.transInfo = TransformInfos()
 
     assert(isinstance(transInfos, TransformInfos))
-    assert isinstance(op, core.Operation)
+    assert(isinstance(op, core.Operation))
 
     opInfo = op.op()
     args = []
@@ -267,7 +244,7 @@ def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
         var
     )
     insts.addInst(op_inst)
-    snippet.addInst(retVar)
+    snippet.addInst(var)
 
     transInfos.set_op_ret(var)
     transInfos.transformed()
