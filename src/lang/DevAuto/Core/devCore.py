@@ -1,7 +1,6 @@
 # DevCore is collection of fundamental objects in DevAuto.
 import typing as typ
 import DevAuto.Core.devCoreExcep as dcexcep
-from DevAuto.utility import TransformInfos
 from .devCoreTypes import opTuple, PropVal, opParameter, opRet, argsCheck
 
 class DaObj(object):
@@ -230,7 +229,6 @@ class Machine(DaObj):
 
         retVal = spec.retVal()[1]()
         retVal.compileInfo = op
-        retVal.transInfo = TransformInfos()
         return retVal
 
     @staticmethod

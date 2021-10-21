@@ -1,12 +1,13 @@
 import abc
 import typing as typ
-from DevAuto.utility import TransformInfos
 from DevAuto.Core.devCoreExcep import DBOOL_IS_NOT_IN_VALID_FORM
 from collections import namedtuple
 from collections.abc import MutableSequence, Iterable
 
 pyType = typ.TypeVar('pyType')
 PropVal = typ.Union[typ.List[str], typ.Mapping[str, str]]
+
+
 
 
 ###############################################################################
@@ -19,7 +20,7 @@ class DType(abc.ABC):
         self._value = None  # type: typ.Any
         # FIXME: compileInfo is an ambiguous name
         self.compileInfo = None  # type: typ.Any
-        self.transInfo = None # type: typ.Union[None, TransformInfos]
+        self.transInfo = None # type: typ.Any
         self.extra = {}  # type: typ.Dict
 
     def value(self) -> typ.Any:
