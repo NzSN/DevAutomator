@@ -177,6 +177,9 @@ class InstGrp:
     # Variable identifier generator
     VAR_ID_GEN = "VIG"
 
+    # Variable Map
+    VAR_MAP = "VE"
+
     def __init__(self, insts: typ.List[Inst],
                  duts: typ.List[str],
                  executors: typ.List[str]) -> None:
@@ -187,7 +190,8 @@ class InstGrp:
         self.compileDict = {
             self.ARG_HOLDER: [],
             self.TEST_EXPR: None,
-            self.VAR_ID_GEN: IdentGenerator("VarGen", "__VAR_", 10000)
+            self.VAR_ID_GEN: IdentGenerator("VarGen", "__VAR_", 10000),
+            self.VAR_MAP: {}  # type: typ.Dict[str, str]
         }
 
     def setFlagT(self, flag: str) -> None:
@@ -235,6 +239,16 @@ class InstGrp:
 
     def addExecutor(self, executor: str) -> None:
         self._executors.append(executor)
+
+    def new_da_var_ident(self) -> str:
+        return self.compileDict[self.VAR_ID_GEN].gen()
+
+    def get_da_var(self, ident: str) -> typ.Optional[str]:
+        var_map = self.compileDict[self.VAR_MAP]
+        if ident in var_map:
+            return var_map[ident]
+        else:
+            return None
 
 
 class DFunc:

@@ -18,7 +18,7 @@ class Snippet:
             self._insts = insts
         self.value = value
 
-    def insts(self) -> typ.List[dal.Inst]:
+    def insts(self) -> typ.List[typ.Union[dal.Inst, str]]:
         return self._insts
 
     def addInst(self, inst: typ.Union[dal.Var, str]) -> None:
@@ -33,6 +33,35 @@ class Snippet:
 ###############################################################################
 #                                  Modifiers                                  #
 ###############################################################################
+def da_define(insts: dal.InstGrp, identifier: str, var: core.DType) -> Snippet:
+    """
+    Note: This modifier should be only used while Variable's value is
+    unpredictable.
+
+    For example:
+
+    def f():
+        if expr:
+            v = da_unwrap(da_define("v", da_call_transform(DInt(1))))
+        else:
+            v = da_unwrap(da_define("v", da_call_transform(DInt(2))))
+
+        f(v)
+
+    v is unknowk until expr is evaluated, so need to bind DInt(1) and DInt(2)'s
+    Def Inst to the same variable.
+    """
+    s = Snippet(value=var)
+
+    # To check that is variable is already defined
+    da_var_ident = insts.get_da_var(identifier)
+    if da_var_ident is None:
+        da_var_ident = insts.new_da_var_ident()
+
+    insts.addInst(dal.Def(da_var_ident, var.value()))
+
+    return s
+
 def da_as_arg(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
 
     args = insts.getFlag(insts.ARG_HOLDER)
@@ -64,6 +93,21 @@ def da_unwrap(o: typ.Any) -> typ.Any:
 ###############################################################################
 #                             Transform Functions                             #
 ###############################################################################
+def da_constant_transform(insts: dal.InstGrp, const: core.DType) -> Snippet:
+    snippet = Snippet(value=const)
+
+    # To check that whether bind to a variable.
+    if not const.transInfo is None:
+        var_ident = const.transInfo.var_identifier()
+        if not var_ident is None:
+            snippet.addInst(dal.Var(var_ident, const.value()))
+            return snippet
+
+    snippet.addInst(const.value())
+
+    return snippet
+
+
 def da_transform_check(o: object) -> bool:
 
     # If the operation was already transformed
@@ -86,10 +130,8 @@ def da_name_transform(insts: dal.InstGrp, n: typ.Any) -> Snippet:
         return s
     else:
 
-        if n.compileInfo is None or \
-           n.transInfo is None:
-
-            return s
+        if n.compileInfo is None:
+            return da_constant_transform(insts, n)
 
         ret = n.transInfo.op_ret()
         if ret is None:
@@ -161,7 +203,6 @@ def da_machine_transform(insts: dal.InstGrp, m: core.Machine) -> core.Machine:
     return m
 
 
-
 ###############################################################################
 #                          Call Expression Transform                          #
 ###############################################################################
@@ -177,7 +218,8 @@ class DA_CALL_TRANSFORM_ARGS_MISMATCH(Exception):
         return "argument mismatch"
 
 
-def da_call_not_operation(insts: dal.InstGrp, o: typ.Any) -> typ.Optional[Snippet]:
+def da_call_not_operation(insts: dal.InstGrp, o: typ.Any) \
+    -> typ.Optional[Snippet]:
 
     snippet = Snippet(value=o)
 
@@ -188,6 +230,7 @@ def da_call_not_operation(insts: dal.InstGrp, o: typ.Any) -> typ.Optional[Snippe
         # It's a call but not an operation.
         da_machine_transform(insts, o)
         return snippet
+
     elif not isinstance(o, core.DType):
         # Value that is computable in python layer
         return snippet
@@ -198,13 +241,14 @@ def da_call_not_operation(insts: dal.InstGrp, o: typ.Any) -> typ.Optional[Snippe
 
     if op is None:
         # A DA Constant
-        snippet.insts().append(o.value())
-        return snippet
+        return da_constant_transform(insts, o)
 
     return None
 
 
 def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
+
+    transInfos = o.transInfo = TransformInfos()
 
     snippet = da_call_not_operation(insts, o)
     if not snippet is None:
@@ -215,7 +259,6 @@ def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
     assert(isinstance(o, core.DType))
 
     op = o.compileInfo
-    transInfos = o.transInfo = TransformInfos()
 
     assert(isinstance(transInfos, TransformInfos))
     assert(isinstance(op, core.Operation))
@@ -266,6 +309,7 @@ def da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
 
 
 def da_if_convert(insts: dal.InstGrp, ifStmt: dal.DIf) -> None:
+
     cond = ifStmt.cond()
 
     if isinstance(cond, bool):

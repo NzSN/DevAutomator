@@ -284,7 +284,8 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         return [bodyDef, elseBodyDef, ifCalling]
 
     def visit_Name(self, node: ast.Name) -> ast.AST:
-        call_expr = ast_wrapper.call(ast.Name(id="da_name_transform", ctx=ast.Load()),
+        call_expr = ast_wrapper.call(ast.Name(
+            id="da_name_transform", ctx=ast.Load()),
                          [ast.Name(id="insts", ctx=ast.Load()), node])
         decor_node = self.decorate(call_expr)
         if decor_node is None:

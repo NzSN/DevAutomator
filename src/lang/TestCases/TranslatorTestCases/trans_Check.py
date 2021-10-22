@@ -6,7 +6,7 @@ import DevAuto.Core as core
 from DevAuto.Core import DStr
 import DevAuto.Translator.translator as trans
 from DevAuto import DFunc
-from DevAuto.lang_imp import InstGrp
+from DevAuto.lang_imp import InstGrp, Var
 from TestCases.CoreTestCases.devCore_Check import BoxMachine
 
 
@@ -115,6 +115,31 @@ def AssignStmts_Cases() -> typ.List[DFunc]:
 ###############################################################################
 #                            If Statement Fixtures                            #
 ###############################################################################
+@DA.function(globals())
+def IfStmt_Case_1() -> bool:
+    box = BoxMachinePlus()
+
+    if box.query(DStr("ident")) == "Box":
+        v = core.DInt(1)
+    else:
+        v = core.DInt(2)
+
+    assert v == core.DInt(1)
+
+    return True
+
+
+@DA.function(globals())
+def IfStmt_Case_2() -> bool:
+    box = BoxMachinePlus()
+    v = 1
+
+    if box.query(DStr("ident")) == "Box":
+        v = 2
+    else:
+        v = 3
+
+    return True
 
 
 ###############################################################################
