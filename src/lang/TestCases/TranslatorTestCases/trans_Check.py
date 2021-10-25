@@ -113,6 +113,27 @@ def AssignStmts_Cases() -> typ.List[DFunc]:
 
 
 ###############################################################################
+#                          Binary Operation Fixtures                          #
+###############################################################################
+@DA.function(globals())
+def BinEqual_Case_1() -> bool:
+    box = BoxMachinePlus()
+    box.query(DStr("A")) == box.query(DStr("B"))
+    return True
+
+@DA.function(globals())
+def BinEqual_Case_2() -> bool:
+    1 == 2
+
+    return True
+
+
+@pytest.fixture
+def BinEqual_Cases() -> typ.List[DFunc]:
+    return [BinEqual_Case_1, BinEqual_Case_2]
+
+
+###############################################################################
 #                            If Statement Fixtures                            #
 ###############################################################################
 @DA.function(globals())
@@ -123,8 +144,6 @@ def IfStmt_Case_1() -> bool:
         v = core.DInt(1)
     else:
         v = core.DInt(2)
-
-    assert v == core.DInt(1)
 
     return True
 
@@ -140,6 +159,11 @@ def IfStmt_Case_2() -> bool:
         v = 3
 
     return True
+
+@pytest.fixture
+def IfStmts_Cases() -> typ.List[DFunc]:
+    return [IfStmt_Case_1, IfStmt_Case_2]
+
 
 
 ###############################################################################
@@ -206,3 +230,61 @@ class Tr_TC:
 
         assert instgrp_3.duts() == ["Box"]
         assert instgrp_3.insts() == []
+
+    def test_BinEqual_Expr_Case_1_Transform(self, Tr, BinEqual_Cases) -> None:
+        Case_1 = BinEqual_Cases[0]
+
+        insts = Tr.trans(Case_1)
+
+        # Verify
+        assert(insts.duts() == ["Box"])
+        assert [str(inst) for inst in insts.insts()] == [
+            "query [A] <__VAR__0>",
+            "query [B] <__VAR__1>",
+            "equal [<__VAR__0> <__VAR__1>]"
+        ]
+
+    def test_BinEqual_Expr_Case_2_Transform(self, Tr, BinEqual_Cases) -> None:
+        Case_2 = BinEqual_Cases[1]
+
+        insts = Tr.trans(Case_2)
+
+        # Verify
+        assert(insts.duts() == ["Box"])
+        assert [str(inst) for inst in insts.insts()] == []
+
+
+    @pytest.mark.skip
+    def test_If_Stmt_Transform_Case_1(self, Tr, IfStmts_Cases) -> None:
+        Case_1 = IfStmts_Cases[0]
+
+        insts_1 = Tr.trans(Case_1)
+
+        # Verify Case 1
+        assert insts_1.duts() == ["Box"]
+
+        insts = [str(inst) for inst in insts_1.insts()]
+        for inst in insts:
+            print(inst)
+
+        assert [str(inst) for inst in insts_1.insts()] == [
+            "query [ident] <__VAR__0>"
+            "Jmp <__VAR__0> 2",
+            "Def <__VAR__1> 2",
+            "Def <__VAR__1> 1"
+        ]
+
+    @pytest.mark.skip
+    def test_If_Stmt_Transform_Case_2(self, Tr, IfStmts_Cases) -> None:
+        Case_2 = IfStmts_Cases[1]
+
+        insts_2 = Tr.trans(Case_2)
+
+        # Verify Case 2
+        assert insts_2.duts() == ["Box"]
+        assert [str(inst) for inst in insts_2.insts()] == [
+            "query [ident] <__VAR__0>"
+            # Cause v is not DA Object so there
+            # is nothing need to be transformed into
+            # Instructions.
+        ]

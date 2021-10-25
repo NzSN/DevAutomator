@@ -55,6 +55,10 @@ class Translator:
         env["da_unwrap"] = trFuncs.da_unwrap
         env["da_as_arg"] = trFuncs.da_as_arg
         env["da_as_assign_value"] = trFuncs.da_as_assign_value
+        env["da_test"] = trFuncs.da_test
+        env["da_define"] = trFuncs.da_define
+        env["DType"] = core.DType
+        env["da_if_transform"] = trFuncs.da_if_transform
 
         return env
 
@@ -74,6 +78,7 @@ class Translator:
         self.preprocessing_after_transform(ast_nodes, [pyfunc.__name__])
 
         # TODO: Remove ast tree print
+        print("Transformed Source:\n\n")
         print(astor.to_source(ast_nodes))
 
         # Transform from ast to List[Inst]
@@ -121,15 +126,18 @@ class TransFlags:
     ARGUMENT_AWAIT = "arg"
     IF_TEST_EXPR = "ITE"
     ASSIGNMENT_STMT = "AS"
+    DA_VAR_IDENTIFIER = "DVI"
+    FORCE_DEFINE_VAR = "DV"
 
     def __init__(self) -> None:
         self._flagsDefault = {
             # Indicate that current expr is
             # argument of another expr
             self.ARGUMENT_AWAIT: False,
-
             self.IF_TEST_EXPR: None,
-            self.ASSIGNMENT_STMT: False
+            self.ASSIGNMENT_STMT: False,
+            self.FORCE_DEFINE_VAR: False,
+            self.DA_VAR_IDENTIFIER: None
         }  # type: typ.Dict[str, typ.Any]
 
         self._stack = [copy.deepcopy(self._flagsDefault)]
@@ -174,6 +182,9 @@ class TransFlags:
     def in_assign_proc(self) -> None:
         self.setTrue(self.ASSIGNMENT_STMT)
 
+    def if_test_proc(self) -> None:
+        self.setTrue(self.IF_TEST_EXPR)
+
     def is_in_assign_proc(self) -> bool:
         return self.get(self.ASSIGNMENT_STMT) == True
 
@@ -198,6 +209,21 @@ class TransFlags:
     def is_recursive_inner(self) -> bool:
         return len(self._stack) == 0
 
+    def force_define_var(self) -> None:
+        self.setTrue(self.FORCE_DEFINE_VAR)
+
+    def is_force_define_var(self) -> bool:
+        return self.get(self.FORCE_DEFINE_VAR) is True
+
+    def set_var_ident(self, ident: str) -> None:
+        self.set(self.DA_VAR_IDENTIFIER, ident)
+
+    def get_var_ident(self) -> str:
+        identifier = self.get(self.DA_VAR_IDENTIFIER)
+        if identifier is None:
+            return "None"
+        else:
+            return identifier
 
 class DA_NodeTransTransform(ast.NodeTransformer):
     """
@@ -206,32 +232,44 @@ class DA_NodeTransTransform(ast.NodeTransformer):
 
     def __init__(self, env: typ.Dict) -> None:
         ast.NodeTransformer.__init__(self)
+        self._insts_ident = "insts"
         self._env = env
         self._func_ident_gen = IdentGenerator("funcGen", "_lambda", 10000)
         self._flags = TransFlags()
 
     def decorate(self, node: ast.AST) -> typ.Optional[ast.AST]:
 
-        new = None
+        new = node
 
         if self._flags.is_arg_await():
             # New insts is as argument of another inst.
             new = ast_wrapper.call(
                 ast.Name(id="da_as_arg", ctx=ast.Load()),
-                [ast.Name(id="insts", ctx=ast.Load()),
-                 typ.cast(ast.expr, node)])
+                [ast.Name(id=self._insts_ident, ctx=ast.Load()),
+                 typ.cast(ast.expr, new)])
 
-        elif self._flags.is_if_test():
+        if self._flags.is_if_test():
             # New insts is as condition expression of
             # an Jmpxx inst.
-            ...
-        elif self._flags.is_in_assign_proc():
+            new = ast_wrapper.call(
+                ast.Name(id="da_test", ctx=ast.Load()),
+                [ast.Name(id=self._insts_ident, ctx=ast.Load()),
+                 typ.cast(ast.expr, new)]
+            )
+
+        if self._flags.is_in_assign_proc():
             # Do nothing cause rvalue's info is
             # contained in TransformInfos. Just need
             # to unwrap value from Snippet.
             new = node
-        else:
-            return node
+
+        if self._flags.is_force_define_var():
+            new = ast_wrapper.call(
+                ast.Name(id="da_define", ctx=ast.Load()),
+                [ast.Name(id=self._insts_ident, ctx=ast.Load()),
+                 ast.Constant(value=self._flags.get_var_ident(), ctx=ast.Load()),
+                 typ.cast(ast.expr, new)]
+            )
 
         # Unwrap snippet to provide it's value to
         # another expression.
@@ -248,45 +286,62 @@ class DA_NodeTransTransform(ast.NodeTransformer):
     def visit_While(self, node):
         return node
 
-    def visit_If(self, node: ast.If):
+    def visit_If(self, node: ast.If) -> typ.List[ast.stmt]:
 
-        # Get dynamic identifier for body function and
-        # elseBody function to prevent global namespace
-        # conflicts
-        body_func_id = self._func_ident_gen.gen()
-        else_body_func_id = self._func_ident_gen.gen()
+        # Transform test expression
+        with self._flags.recursive():
+            self._flags.if_test_proc()
+            test_expr = self.visit(node.test)
 
-        # Wrap body of if stmt into functions
-        bodyDef = ast_wrapper.function_define_posonly(
-            body_func_id, [], node.body)
-        elseBodyDef = ast_wrapper.function_define_posonly(
-            else_body_func_id, [], node.orelse)
+            # Python Variable may refer to different
+            # DA Value in different condition so python
+            # need to refer to DA Variable instead of DA Value.
+            self._flags.force_define_var()
 
-        # Transform stmts in body and elsebody recursively.
-        self.visit(bodyDef)
-        self.visit(elseBodyDef)
+            self._insts_ident = "body_insts"
+            bodyStmts = [self.visit(stmt) for stmt in node.body]
 
-        ifCalling = ast_wrapper.call(
-            ast_wrapper.call(
-                ast.Name("DIf", ctx=ast.Load()),
-                [ast.Name(id="insts", ctx=ast.Load()),
-                 node.test,
-                 ast.Name(id=body_func_id, ctx=ast.Load()),
-                 ast.Name(id=else_body_func_id, ctx=ast.Load())]
-            ),
-            [ast.Name(id="da_if_convert", ctx=ast.Load())]
-        )
-        ast.fix_missing_locations(ifCalling)
+            self._insts_ident = "elseBody_insts"
+            elseBodyStmts = [self.visit(stmt) for stmt in node.orelse]
 
-        self._env['DIf'] = dal.DIf
-        self._env['da_if_convert'] = trFuncs.da_if_convert
+        stmts = ast.parse("""
+test_expr = 0
+if isinstance(test_expr, DType):
+    body_insts = InstGrp([], [], [])
+    elseBody_insts = InstGrp([], [], [])
 
-        return [bodyDef, elseBodyDef, ifCalling]
+    # Transform Body Statements
+    # Transform elseBody Statements
+
+    da_if_transform(insts, body_insts, elseBody_insts)
+else:
+    if test_expr:
+        ...
+    else:
+        ...
+        """)
+
+        stmts.body[0].value = test_expr  # type: ignore
+        if_stmt = typ.cast(ast.If, stmts.body[1])
+        # Setup test expression
+        typ.cast(ast.Call ,if_stmt.test).args[0] = \
+            ast.Name(id="test_expr", ctx=ast.Load())
+
+        self._insts_ident = "insts"
+        if_stmt.body = \
+            if_stmt.body[0:2] + \
+            bodyStmts + \
+            elseBodyStmts + \
+            [if_stmt.body[-1]]
+
+        # TODO: Deal with Python If
+
+        return stmts.body
 
     def visit_Name(self, node: ast.Name) -> ast.AST:
         call_expr = ast_wrapper.call(ast.Name(
             id="da_name_transform", ctx=ast.Load()),
-                         [ast.Name(id="insts", ctx=ast.Load()), node])
+                         [ast.Name(id=self._insts_ident, ctx=ast.Load()), node])
         decor_node = self.decorate(call_expr)
         if decor_node is None:
             # TODO: Should provide a more precise exception
@@ -303,8 +358,38 @@ class DA_NodeTransTransform(ast.NodeTransformer):
     def visit_Constant(self, node: ast.Constant) -> ast.Constant:
         return node
 
+    def visit_Compare(self, node: ast.Compare) -> typ.Any:
+
+        ops = node.ops
+        comparators = node.comparators
+
+        # Only support one operator currently
+        assert len(ops) == len(comparators) == 1
+
+        op = ops[0]
+
+        # Get function to deal with the operation
+        f_ident = "da_binOp_"+ type(op).__name__ + "_transform"
+
+        return
+
+
     def visit_Assign(self, node: ast.Assign) -> ast.Assign:
+        if self._flags.is_force_define_var():
+            define_var = True
+        else:
+            define_var = False
+
         with self._flags.recursive():
+
+            if define_var:
+                # Need to associate right expr's value
+                # to a DA-Variable if it's a DA-Value.
+                self._flags.force_define_var()
+                ident = astor.to_source(node.targets[0])
+                ident = ident.replace('\n', '')
+                self._flags.set_var_ident(ident)
+
             self._flags.in_assign_proc()
             node.value = self.visit(node.value)
         return node
@@ -328,7 +413,7 @@ class DA_NodeTransTransform(ast.NodeTransformer):
         # To check that is any Operations is called
         # as arguments of this calling.
         transform_node = typ.cast(ast.Call, ast_wrapper.parse_expr(
-            "da_call_transform(insts)"))
+            "da_call_transform(" + self._insts_ident + ")"))
         transform_node.args.append(node)
 
         decorated_node = self.decorate(transform_node)

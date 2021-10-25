@@ -33,7 +33,7 @@ class Snippet:
 ###############################################################################
 #                                  Modifiers                                  #
 ###############################################################################
-def da_define(insts: dal.InstGrp, identifier: str, var: core.DType) -> Snippet:
+def da_define(insts: dal.InstGrp, identifier: str, snippet: Snippet) -> Snippet:
     """
     Note: This modifier should be only used while Variable's value is
     unpredictable.
@@ -51,16 +51,18 @@ def da_define(insts: dal.InstGrp, identifier: str, var: core.DType) -> Snippet:
     v is unknowk until expr is evaluated, so need to bind DInt(1) and DInt(2)'s
     Def Inst to the same variable.
     """
-    s = Snippet(value=var)
-
     # To check that is variable is already defined
     da_var_ident = insts.get_da_var(identifier)
     if da_var_ident is None:
         da_var_ident = insts.new_da_var_ident()
 
-    insts.addInst(dal.Def(da_var_ident, var.value()))
+    if len(snippet.insts()) != 0:
+        # Make sure it's not a python value
+        insts.addInst(dal.Def(
+            da_var_ident,
+            typ.cast(core.DType, snippet.value).value()))
 
-    return s
+    return snippet
 
 def da_as_arg(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
 
@@ -71,6 +73,17 @@ def da_as_arg(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
         args.append(inst)
 
     return snippet
+
+
+def da_test(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
+
+    vars = snippet.insts()
+
+    if len(vars) == 1:
+        insts.setFlagWith(insts.TEST_EXPR, vars[0])
+
+    return snippet
+
 
 
 def da_as_assign_value(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
@@ -307,16 +320,18 @@ def da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
     insts.addInst(op_inst)
     return val
 
-
-def da_if_convert(insts: dal.InstGrp, ifStmt: dal.DIf) -> None:
-
-    cond = ifStmt.cond()
-
-    if isinstance(cond, bool):
-        return
+# TODO: implement da_if_transform
+def da_if_transform(insts: dal.InstGrp,
+                    body: typ.List[ast.stmt],
+                    elseBody: typ.List[ast.stmt]) -> None:
+    ...
 
 
-def da_equal_convert(
+
+###############################################################################
+#                            da_binOp_xxx_transform                           #
+###############################################################################
+def da_binOp_Eq_transform(
         insts: dal.InstGrp,
         loperand: ast.expr,
         roperand: ast.expr) -> typ.Union[bool, core.DBool]:
