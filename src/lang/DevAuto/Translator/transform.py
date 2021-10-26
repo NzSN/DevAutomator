@@ -177,19 +177,6 @@ def da_name_transform(insts: dal.InstGrp, n: typ.Any) -> Snippet:
     return s
 
 
-def da_expr_convert(insts: dal.InstGrp, o: object) -> typ.Any:
-    """
-    Convert DaObj into insts. If o is a PyObj then do nothing
-    and the PyObj directly.
-    """
-    if isinstance(o, core.Machine):
-        return da_machine_transform(insts, o)
-    elif isinstance(o, core.DType):
-        return da_oper_convert(insts, o)
-
-    return o
-
-
 def da_machine_transform(insts: dal.InstGrp, m: core.Machine) -> core.Machine:
     """
     Generate requirements
