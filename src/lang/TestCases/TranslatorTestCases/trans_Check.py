@@ -123,8 +123,9 @@ def BinEqual_Case_1() -> bool:
 
 @DA.function(globals())
 def BinEqual_Case_2() -> bool:
-    1 == 2
-
+    a = 1 == 2
+    assert 1 == 2
+    print(a)
     return True
 
 
@@ -236,6 +237,9 @@ class Tr_TC:
 
         insts = Tr.trans(Case_1)
 
+        for inst in insts.insts():
+            print(inst)
+
         # Verify
         assert(insts.duts() == ["Box"])
         assert [str(inst) for inst in insts.insts()] == [
@@ -250,9 +254,7 @@ class Tr_TC:
         insts = Tr.trans(Case_2)
 
         # Verify
-        assert(insts.duts() == ["Box"])
         assert [str(inst) for inst in insts.insts()] == []
-
 
     @pytest.mark.skip
     def test_If_Stmt_Transform_Case_1(self, Tr, IfStmts_Cases) -> None:
@@ -262,11 +264,6 @@ class Tr_TC:
 
         # Verify Case 1
         assert insts_1.duts() == ["Box"]
-
-        insts = [str(inst) for inst in insts_1.insts()]
-        for inst in insts:
-            print(inst)
-
         assert [str(inst) for inst in insts_1.insts()] == [
             "query [ident] <__VAR__0>"
             "Jmp <__VAR__0> 2",

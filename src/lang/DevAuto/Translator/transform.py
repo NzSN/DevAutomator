@@ -64,10 +64,15 @@ def da_define(insts: dal.InstGrp, identifier: str, snippet: Snippet) -> Snippet:
 
     return snippet
 
-def da_as_arg(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
+def da_as_arg(insts: dal.InstGrp, snippet: Snippet, recur_count: int) -> Snippet:
 
-    args = insts.getFlag(insts.ARG_HOLDER)
-    assert isinstance(args, typ.List)
+    args_dict = insts.getFlag(insts.ARG_HOLDER)
+    assert args_dict is not None
+
+    if not recur_count in args_dict:
+        args_dict[recur_count] = args = []
+    else:
+        args = args_dict[recur_count]
 
     for inst in snippet.insts():
         args.append(inst)
@@ -88,12 +93,29 @@ def da_test(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
 
 def da_as_assign_value(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
 
-    # Both da_as_arg and da_as_assign_value use same entry
-    # pass Variable so able to reuse da_as_arg
-    da_as_arg(insts, snippet)
+    v = snippet.insts()
+
+    # Multiple assignment is not supported
+    assert len(v) == 1
+
+    insts.setFlagWith(insts.ASSIGN_VALUE, v[0])
 
     return snippet
 
+
+def da_comparator(insts: dal.InstGrp, snippet: Snippet) -> Snippet:
+
+    v = snippet.insts()
+
+    # There should be only one comparator
+    assert len(v) == 1
+
+    if insts.getFlag(insts.COMPARETOR_LEFT) is None:
+        insts.setFlagWith(insts.COMPARETOR_LEFT, v[0])
+    else:
+        insts.setFlagWith(insts.COMPARETOR_RIGHT, v[0])
+
+    return snippet
 
 def da_unwrap(o: typ.Any) -> typ.Any:
 
@@ -153,37 +175,6 @@ def da_name_transform(insts: dal.InstGrp, n: typ.Any) -> Snippet:
         s.addInst(ret)
 
     return s
-
-
-def da_assign_transform(insts: dal.InstGrp, target_ident: str, target: object) -> None:
-    """
-    Transform assignment into Instructions if need.
-    """
-
-    if isinstance(target, core.Machine):
-        return
-
-    # Cause DAL is not an OOP language, there is no things like objects,
-    # structure, and also cause of it still no any container currently
-    # so generate Instructions only when value is an operation.
-    if isinstance(target, core.DType):
-
-        if target.compileInfo is None:
-            # Assignment's value expression is
-            # not an Machine Operation just return
-            return
-
-        value_expr_var = insts.getFlag(insts.ARG_HOLDER)
-        insts.setFlagWith(insts.ARG_HOLDER, [])
-        assert value_expr_var is not None
-        if len(value_expr_var) != 1:
-            raise Exception("Assignment Transform failed to get right expression")
-
-        # otherwise it's a Machine Operation then redirect it's
-        # result to a DA Variable in DAL layer.
-        insts.addInst(dal.Assign(target_ident, value_expr_var[0]))
-
-    return
 
 
 def da_expr_convert(insts: dal.InstGrp, o: object) -> typ.Any:
@@ -259,14 +250,14 @@ def da_call_not_operation(insts: dal.InstGrp, o: typ.Any) \
     return None
 
 
-def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
+def da_call_transform(insts: dal.InstGrp, o: typ.Any, recur_count: int) -> Snippet:
 
-    transInfos = o.transInfo = TransformInfos()
 
     snippet = da_call_not_operation(insts, o)
     if not snippet is None:
         return snippet
 
+    transInfos = o.transInfo = TransformInfos()
     snippet = Snippet(value=o)
 
     assert(isinstance(o, core.DType))
@@ -282,14 +273,17 @@ def da_call_transform(insts: dal.InstGrp, o: typ.Any) -> Snippet:
 
     # Get Arguments if need
     if argv > 0:
-        args = insts.getFlag(insts.ARG_HOLDER)
+        args_dict = insts.getFlag(insts.ARG_HOLDER)
+        assert args_dict is not None
+
+        args = args_dict[recur_count]
 
         if args is None:
             raise DA_CALL_TRANSFORM_NO_ARGS_FOUND()
         if len(args) != argv:
             raise DA_CALL_TRANSFORM_ARGS_MISMATCH()
 
-        insts.setFlagWith(insts.ARG_HOLDER, [])
+        del args_dict[recur_count]
 
     retVar = insts.compileDict[insts.VAR_ID_GEN].gen()
     var = dal.Var(retVar)
@@ -331,30 +325,53 @@ def da_if_transform(insts: dal.InstGrp,
 ###############################################################################
 #                            da_binOp_xxx_transform                           #
 ###############################################################################
+type_map = {
+    "str": core.DStr,
+    "int": core.DInt
+}  # type: typ.Dict[str, type]
+
+
+def da_binOp_need_transformed(loperand: object,
+                              roperand: object) -> bool:
+
+    for operand in [loperand, roperand]:
+        if isinstance(operand, core.DType) and \
+           operand.compileInfo is not None:
+            return True
+
+    return False
+
+
+def da_to_python_type(o: object) -> typ.Any:
+    if isinstance(o, core.DType):
+        return o.value()
+    else:
+        return o
+
+
+
 def da_binOp_Eq_transform(
         insts: dal.InstGrp,
-        loperand: ast.expr,
-        roperand: ast.expr) -> typ.Union[bool, core.DBool]:
+        loperand: object,
+        roperand: object) -> Snippet:
 
-    # Setup transform flags
-    insts.setFlagT(flags.IN_IF_COND_TRANS)
-    insts.setFlagF(flags.IF_COND_COMPUTEABLE_IN_PYTHON)
-    insts.unsetFlag(flags.IF_COND_BOOLEAN_VALUE)
+    s = Snippet()
 
-    test_ret = loperand == roperand
+    if not da_binOp_need_transformed(loperand, roperand):
+        s.value = loperand == roperand
+        return s
+    else:
+        l = insts.getFlag(insts.COMPARETOR_LEFT)
+        if l is None:
+            l = da_to_python_type(l)
+        r = insts.getFlag(insts.COMPARETOR_RIGHT)
+        if r is None:
+            r = da_to_python_type(l)
 
-    if isinstance(test_ret, bool):
-        insts.setFlagT(flags.IF_COND_COMPUTEABLE_IN_PYTHON)
-        return test_ret
-    elif isinstance(test_ret, core.DBool):
+        insts.setFlagWith(insts.COMPARETOR_LEFT, None)
+        insts.setFlagWith(insts.COMPARETOR_RIGHT, None)
 
-        if test_ret.isValidForm():
-            # It's value is computable in python layer
-            insts.setFlagT(flags.IF_COND_COMPUTEABLE_IN_PYTHON)
-            return test_ret
+        eq_inst = dal.Equal(l, r)
+        insts.addInst(eq_inst)
 
-        # DBool is not computable so need to generate
-        # insts to get the boolean value of the test
-        # condition.
-
-    return True
+    return s

@@ -1,4 +1,6 @@
+import re
 import ast
+from types import MethodType
 import astor
 import copy
 import inspect
@@ -51,14 +53,12 @@ class Translator:
     def environmentInit(self, func: dal.DFunc) -> typ.Dict:
         env = func.env()
         env["insts"] = dal.InstGrp([], [], [])
-        env["da_expr_convert"] = trFuncs.da_expr_convert
-        env["da_unwrap"] = trFuncs.da_unwrap
-        env["da_as_arg"] = trFuncs.da_as_arg
-        env["da_as_assign_value"] = trFuncs.da_as_assign_value
-        env["da_test"] = trFuncs.da_test
-        env["da_define"] = trFuncs.da_define
         env["DType"] = core.DType
-        env["da_if_transform"] = trFuncs.da_if_transform
+
+        # Import Transform Functions into environment.
+        funcs = [x for x in dir(trFuncs) if not re.match("da_", x) is None]
+        for f in funcs:
+            env[f] = getattr(trFuncs, f)
 
         return env
 
@@ -126,18 +126,23 @@ class TransFlags:
     ARGUMENT_AWAIT = "arg"
     IF_TEST_EXPR = "ITE"
     ASSIGNMENT_STMT = "AS"
+    ASSIGN_RIGHT = "AR"
     DA_VAR_IDENTIFIER = "DVI"
     FORCE_DEFINE_VAR = "DV"
+    COMPARE_SUB_EXPR = "CSE"
 
     def __init__(self) -> None:
+        self._recursive_count = 0
         self._flagsDefault = {
             # Indicate that current expr is
             # argument of another expr
             self.ARGUMENT_AWAIT: False,
             self.IF_TEST_EXPR: None,
             self.ASSIGNMENT_STMT: False,
+            self.ASSIGN_RIGHT: None,
             self.FORCE_DEFINE_VAR: False,
-            self.DA_VAR_IDENTIFIER: None
+            self.DA_VAR_IDENTIFIER: None,
+            self.COMPARE_SUB_EXPR: False,
         }  # type: typ.Dict[str, typ.Any]
 
         self._stack = [copy.deepcopy(self._flagsDefault)]
@@ -172,6 +177,15 @@ class TransFlags:
     def setFalse(self, key: str) -> None:
         self.current()[key] = False
 
+    def compare_sub_expr(self) -> None:
+        self.setTrue(self.COMPARE_SUB_EXPR)
+
+    def is_compare_sub_expr(self) -> bool:
+        return self.get(self.COMPARE_SUB_EXPR) is True
+
+    def recursive_count(self) -> int:
+        return self._recursive_count
+
     def arg_await(self) -> None:
         """
         Set arg_await flag to let Transformer to
@@ -181,6 +195,12 @@ class TransFlags:
 
     def in_assign_proc(self) -> None:
         self.setTrue(self.ASSIGNMENT_STMT)
+
+    def set_assign_value(self, v: typ.Any) -> None:
+        self.set(self.ASSIGN_RIGHT, v)
+
+    def assign_value(self) -> typ.Any:
+        return self.get(self.ASSIGN_RIGHT)
 
     def if_test_proc(self) -> None:
         self.setTrue(self.IF_TEST_EXPR)
@@ -198,10 +218,12 @@ class TransFlags:
         return self
 
     def _recursive_in(self) -> None:
+        self._recursive_count += 1
         self._stack.append(copy.deepcopy(self._flagsDefault))
 
     def _recursive_exit(self) -> None:
         if len(self._stack) > 1:
+            self._recursive_count -= 1
             self._stack.pop()
         else:
             return
@@ -246,7 +268,8 @@ class DA_NodeTransTransform(ast.NodeTransformer):
             new = ast_wrapper.call(
                 ast.Name(id="da_as_arg", ctx=ast.Load()),
                 [ast.Name(id=self._insts_ident, ctx=ast.Load()),
-                 typ.cast(ast.expr, new)])
+                 typ.cast(ast.expr, new),
+                 ast.Constant(value=self._flags.recursive_count() - 1)])
 
         if self._flags.is_if_test():
             # New insts is as condition expression of
@@ -268,6 +291,13 @@ class DA_NodeTransTransform(ast.NodeTransformer):
                 ast.Name(id="da_define", ctx=ast.Load()),
                 [ast.Name(id=self._insts_ident, ctx=ast.Load()),
                  ast.Constant(value=self._flags.get_var_ident(), ctx=ast.Load()),
+                 typ.cast(ast.expr, new)]
+            )
+
+        if self._flags.is_compare_sub_expr():
+            new = ast_wrapper.call(
+                ast.Name(id="da_comparator", ctx=ast.Load()),
+                [ast.Name(id=self._insts_ident, ctx=ast.Load()),
                  typ.cast(ast.expr, new)]
             )
 
@@ -367,11 +397,30 @@ else:
         assert len(ops) == len(comparators) == 1
 
         op = ops[0]
+        left = node.left
+        comparator = comparators[0]
 
         # Get function to deal with the operation
         f_ident = "da_binOp_"+ type(op).__name__ + "_transform"
 
-        return
+        if type(op).__name__ == "Is":
+            return node
+
+        # Transform left and comparator
+        with self._flags.recursive():
+            self._flags.compare_sub_expr()
+            left_transed = self.visit(left)
+            right_transed = self.visit(comparator)
+
+        eq_expr = ast_wrapper.call(
+            ast.Name(id=f_ident, ctx=ast.Load()),
+            [ast.Name(id="insts", ctx=ast.Load()),
+             left_transed, right_transed]
+        )
+
+        self._env["da_binOp_Eq_transform"] = trFuncs.da_binOp_Eq_transform
+
+        return eq_expr
 
 
     def visit_Assign(self, node: ast.Assign) -> ast.Assign:
@@ -415,6 +464,8 @@ else:
         transform_node = typ.cast(ast.Call, ast_wrapper.parse_expr(
             "da_call_transform(" + self._insts_ident + ")"))
         transform_node.args.append(node)
+        transform_node.args.append(
+            ast.Constant(value=self._flags.recursive_count()))
 
         decorated_node = self.decorate(transform_node)
         if decorated_node is None:

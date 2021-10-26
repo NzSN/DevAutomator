@@ -133,6 +133,10 @@ class Equal(VInst):
     def __init__(self, l: typ.Union[str, Var], r: typ.Union[str, Var]) -> None:
         VInst.__init__(self, l, r)
 
+    def __str__(self) -> str:
+        return "equal [" + str(self.loperand()) + \
+            " " + str(self.roperand()) + "]"
+
 
 class Def(VInst):
 
@@ -180,6 +184,12 @@ class InstGrp:
     # Variable Map
     VAR_MAP = "VE"
 
+    ASSIGN_VALUE = "AV"
+
+    COMPARETOR_LEFT = "CL"
+
+    COMPARETOR_RIGHT = "CR"
+
     def __init__(self, insts: typ.List[Inst],
                  duts: typ.List[str],
                  executors: typ.List[str]) -> None:
@@ -188,10 +198,13 @@ class InstGrp:
         self._duts = duts
         self._executors = executors
         self.compileDict = {
-            self.ARG_HOLDER: [],
+            self.ARG_HOLDER: {},  # type: typ.Dict[int, typ.Any]
             self.TEST_EXPR: None,
             self.VAR_ID_GEN: IdentGenerator("VarGen", "__VAR_", 10000),
-            self.VAR_MAP: {}  # type: typ.Dict[str, str]
+            self.VAR_MAP: {},  # type: typ.Dict[str, str]
+            self.ASSIGN_VALUE: None,
+            self.COMPARETOR_LEFT: None,
+            self.COMPARETOR_RIGHT: None
         }
 
     def setFlagT(self, flag: str) -> None:
