@@ -418,7 +418,7 @@ else:
              left_transed, right_transed]
         )
 
-        self._env["da_binOp_Eq_transform"] = trFuncs.da_binOp_Eq_transform
+        eq_expr = self.decorate(eq_expr)
 
         return eq_expr
 
