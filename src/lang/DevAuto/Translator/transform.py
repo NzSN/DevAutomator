@@ -336,7 +336,6 @@ def da_to_python_type(o: object) -> typ.Any:
         return o
 
 
-
 def da_binOp_Eq_transform(
         insts: dal.InstGrp,
         loperand: object,
@@ -350,10 +349,10 @@ def da_binOp_Eq_transform(
     else:
         l = insts.getFlag(insts.COMPARETOR_LEFT)
         if l is None:
-            l = da_to_python_type(l)
+            l = da_to_python_type(loperand)
         r = insts.getFlag(insts.COMPARETOR_RIGHT)
         if r is None:
-            r = da_to_python_type(l)
+            r = da_to_python_type(roperand)
 
         insts.setFlagWith(insts.COMPARETOR_LEFT, None)
         insts.setFlagWith(insts.COMPARETOR_RIGHT, None)

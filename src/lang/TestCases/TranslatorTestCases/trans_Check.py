@@ -124,14 +124,19 @@ def BinEqual_Case_1() -> bool:
 @DA.function(globals())
 def BinEqual_Case_2() -> bool:
     a = 1 == 2
-    assert 1 == 2
-    print(a)
+    return True
+
+@DA.function(globals())
+def BinEqual_Case_3() -> bool:
+    box = BoxMachinePlus()
+    box.query(DStr("A")) == "A"
+
     return True
 
 
 @pytest.fixture
 def BinEqual_Cases() -> typ.List[DFunc]:
-    return [BinEqual_Case_1, BinEqual_Case_2]
+    return [BinEqual_Case_1, BinEqual_Case_2, BinEqual_Case_3]
 
 
 ###############################################################################
@@ -255,6 +260,21 @@ class Tr_TC:
 
         # Verify
         assert [str(inst) for inst in insts.insts()] == []
+
+    def test_BinEqual_Expr_Case_3_Transform(self, Tr, BinEqual_Cases) -> None:
+        Case_3 = BinEqual_Cases[2]
+
+        insts = Tr.trans(Case_3)
+
+        for inst in insts.insts():
+            print(inst)
+
+        # Verify
+        assert(insts.duts() == ["Box"])
+        assert [str(inst) for inst in insts.insts()] == [
+            "query [A] <__VAR__0>",
+            "equal [<__VAR__0> A]"
+        ]
 
     @pytest.mark.skip
     def test_If_Stmt_Transform_Case_1(self, Tr, IfStmts_Cases) -> None:
