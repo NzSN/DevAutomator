@@ -250,7 +250,7 @@ class Tr_TC:
         assert [str(inst) for inst in insts.insts()] == [
             "query [A] <__VAR__0>",
             "query [B] <__VAR__1>",
-            "equal [<__VAR__0> <__VAR__1>]"
+            "equal [<__VAR__0> <__VAR__1>] <__VAR__2>"
         ]
 
     def test_BinEqual_Expr_Case_2_Transform(self, Tr, BinEqual_Cases) -> None:
@@ -266,17 +266,13 @@ class Tr_TC:
 
         insts = Tr.trans(Case_3)
 
-        for inst in insts.insts():
-            print(inst)
-
         # Verify
         assert(insts.duts() == ["Box"])
         assert [str(inst) for inst in insts.insts()] == [
             "query [A] <__VAR__0>",
-            "equal [<__VAR__0> A]"
+            "equal [<__VAR__0> A] <__VAR__1>"
         ]
 
-    @pytest.mark.skip
     def test_If_Stmt_Transform_Case_1(self, Tr, IfStmts_Cases) -> None:
         Case_1 = IfStmts_Cases[0]
 
@@ -285,22 +281,27 @@ class Tr_TC:
         # Verify Case 1
         assert insts_1.duts() == ["Box"]
         assert [str(inst) for inst in insts_1.insts()] == [
-            "query [ident] <__VAR__0>"
-            "Jmp <__VAR__0> 2",
-            "Def <__VAR__1> 2",
-            "Def <__VAR__1> 1"
+            "query [ident] <__VAR__0>",
+            "equal [<__VAR__0> Box] <__VAR__1>",
+            "jmptrue <__VAR__1> 1",
+            "def __VAR__2 2",
+            "def __VAR__2 1"
         ]
 
-    @pytest.mark.skip
     def test_If_Stmt_Transform_Case_2(self, Tr, IfStmts_Cases) -> None:
         Case_2 = IfStmts_Cases[1]
 
         insts_2 = Tr.trans(Case_2)
 
+        for insts in insts_2.insts():
+            print(insts)
+            1
         # Verify Case 2
         assert insts_2.duts() == ["Box"]
         assert [str(inst) for inst in insts_2.insts()] == [
-            "query [ident] <__VAR__0>"
+            "query [ident] <__VAR__0>",
+            "equal [<__VAR__0> Box] <__VAR__1>",
+            "jmptrue <__VAR__1> 0"
             # Cause v is not DA Object so there
             # is nothing need to be transformed into
             # Instructions.

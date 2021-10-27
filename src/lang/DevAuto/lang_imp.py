@@ -1,3 +1,4 @@
+from types import MethodType
 import typing as typ
 import DevAuto.Core as core
 from DevAuto.utility import *
@@ -117,9 +118,26 @@ class Jmp(CInst):
         return self._to
 
 
+class JmpTrue(CInst):
+
+    def __init__(self,
+                 test: typ.Union[core.DBool, Var],
+                 idx: core.DInt) -> None:
+        self._test = test
+        self._idx = idx
+
+    def test(self) -> typ.Union[core.DBool, Var]:
+        return self._test
+
+    def goto_inst(self) -> core.DInt:
+        return self._idx
+
+    def __str__(self) -> str:
+        return "jmptrue " + str(self._test) + " " + str(self._idx)
+
+
 class Jmpeq(CInst):
     ...
-
 
 
 class Op(OInst):
@@ -130,25 +148,29 @@ class Op(OInst):
 
 class Equal(VInst):
 
-    def __init__(self, l: typ.Union[str, Var], r: typ.Union[str, Var]) -> None:
+    def __init__(self, l: typ.Union[str, Var], r: typ.Union[str, Var], ret: Var) -> None:
         VInst.__init__(self, l, r)
+        self._ret = ret
 
     def __str__(self) -> str:
         return "equal [" + str(self.loperand()) + \
-            " " + str(self.roperand()) + "]"
+            " " + str(self.roperand()) + "] " + str(self._ret)
 
 
 class Def(VInst):
 
-    def __init__(self, ident: str, value: str) -> None:
+    def __init__(self, ident: str, value: core.DType) -> None:
         self._ident = ident
         self._value = value
 
     def ident(self) -> str:
         return self._ident
 
-    def value(self) -> str:
+    def value(self) -> core.DType:
         return self._value
+
+    def __str__(self) -> str:
+        return "def " + str(self._ident) + " " + str(self._value)
 
 
 class Assign(VInst):
@@ -241,6 +263,9 @@ class InstGrp:
     def addInst(self, inst: Inst) -> None:
         self._insts.append(inst)
 
+    def addInsts(self, insts: typ.List[Inst]) -> None:
+        self._insts = self._insts + insts
+
     def duts(self) -> typ.List[str]:
         return self._duts
 
@@ -262,6 +287,14 @@ class InstGrp:
             return var_map[ident]
         else:
             return None
+
+    def add_var_map(self, pyVar: str, daVar: str) -> None:
+        var_map = self.compileDict[self.VAR_MAP]
+
+        if pyVar in var_map:
+            return
+        else:
+            var_map[pyVar] = daVar
 
 
 class DFunc:

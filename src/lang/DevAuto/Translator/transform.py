@@ -55,6 +55,8 @@ def da_define(insts: dal.InstGrp, identifier: str, snippet: Snippet) -> Snippet:
     da_var_ident = insts.get_da_var(identifier)
     if da_var_ident is None:
         da_var_ident = insts.new_da_var_ident()
+        insts.add_var_map(identifier, da_var_ident)
+
 
     if len(snippet.insts()) != 0:
         # Make sure it's not a python value
@@ -303,10 +305,18 @@ def da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
 
 # TODO: implement da_if_transform
 def da_if_transform(insts: dal.InstGrp,
-                    body: typ.List[ast.stmt],
-                    elseBody: typ.List[ast.stmt]) -> None:
-    ...
+                    body: dal.InstGrp,
+                    elseBody: dal.InstGrp) -> None:
 
+    test_result = insts.getFlag(insts.TEST_EXPR)
+    assert(isinstance(test_result, core.DBool) or
+           isinstance(test_result, dal.Var))
+
+    # Create Jmp instruction
+    jmp_inst = dal.JmpTrue(test_result, core.DInt(len(elseBody)))
+    insts.addInst(jmp_inst)
+    insts.addInsts(elseBody.insts())
+    insts.addInsts(body.insts())
 
 
 ###############################################################################
@@ -357,7 +367,18 @@ def da_binOp_Eq_transform(
         insts.setFlagWith(insts.COMPARETOR_LEFT, None)
         insts.setFlagWith(insts.COMPARETOR_RIGHT, None)
 
-        eq_inst = dal.Equal(l, r)
+        ident = insts.new_da_var_ident()
+        var = dal.Var(ident)
+
+        eq_inst = dal.Equal(l, r, var)
         insts.addInst(eq_inst)
+        s.addInst(var)
+
+        ret = core.DBool()
+        ret.compileInfo = 1
+        ret.transInfo = TransformInfos()
+        ret.transInfo.set_op_ret = var
+
+        s.value = ret
 
     return s

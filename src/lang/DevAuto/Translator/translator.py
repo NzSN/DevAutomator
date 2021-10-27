@@ -340,6 +340,16 @@ if isinstance(test_expr, DType):
     body_insts = InstGrp([], [], [])
     elseBody_insts = InstGrp([], [], [])
 
+    body_insts.compileDict[insts.VAR_ID_GEN] = \
+        insts.compileDict[insts.VAR_ID_GEN]
+    elseBody_insts.compileDict[insts.VAR_ID_GEN] = \
+        insts.compileDict[insts.VAR_ID_GEN]
+
+    body_insts.compileDict[insts.VAR_MAP] = \
+        insts.compileDict[insts.VAR_MAP]
+    elseBody_insts.compileDict[insts.VAR_MAP] = \
+        insts.compileDict[insts.VAR_MAP]
+
     # Transform Body Statements
     # Transform elseBody Statements
 
@@ -359,7 +369,7 @@ else:
 
         self._insts_ident = "insts"
         if_stmt.body = \
-            if_stmt.body[0:2] + \
+            if_stmt.body[0:6] + \
             bodyStmts + \
             elseBodyStmts + \
             [if_stmt.body[-1]]
