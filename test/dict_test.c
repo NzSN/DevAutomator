@@ -8,7 +8,7 @@ int test_hash(void *key) {
     int total = 0;
     char *s = key, c = *s;
 
-    while (c != NULL) {
+    while (c != '\0') {
         c = *s;
         total += (short)*s;
         s++;
