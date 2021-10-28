@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+enable_testing()
+
 # Project define
 project(DevAutomator)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
@@ -18,4 +20,10 @@ set(TEST_OBJs
   # Dict's testcases
   ${TESTs}/dict_test.c)
 add_executable(unittest ${ROOT}/test/test.c ${TEST_OBJs} ${SRCFs})
+add_test(NAME valgrind_unittest
+  	COMMAND valgrind --leak-check=full
+                         --show-leak-kinds=all
+                         --track-origins=yes
+			 --error-exitcode=1
+                         --verbose ./unittest)
 include_directories(${INCLUDE})
