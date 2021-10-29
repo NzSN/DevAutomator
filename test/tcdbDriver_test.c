@@ -3,16 +3,19 @@
 #include "tcdb_drivers.h"
 
 
+
+
 /*****************************************************************************/
 /*                       Trivial TCDB Driver TestCases                       */
 /*****************************************************************************/
+TcdbType trivialType = { NULL, NULL, NULL, NULL, NULL, NULL };
+
 CTEST_DATA(TcdbDriverUT) {
-    TcdbDriver *driver;
+  TcdbDriver *driver;
 };
 
-
 CTEST_SETUP(TcdbDriverUT) {
-    data->driver = tcdbDriverCreate(NULL);
+    data->driver = tcdbDriverCreate(&trivialType);
 }
 
 
