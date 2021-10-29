@@ -9,8 +9,9 @@ set(ROOT .)
 set(SRCs ${ROOT}/src)
 set(Libs ${ROOT}/lib)
 set(CMAKE_C_STANDARD 11)
-set(SRCFs ${SRCs}/list.c ${SRCs}/dict.c)
-set(INCLUDE ${ROOT}/include ${ROOT}/include/lib)
+set(SRCFs ${SRCs}/list.c ${SRCs}/dict.c ${SRCs}/tcdb/tcdb_drivers.c)
+set(INCLUDE ${ROOT}/include ${ROOT}/include/lib 
+	    ${ROOT}/src ${ROOT}/src/tcdb)
 add_executable(binary ${SRCs}/main.c ${SRCFs})
 
 set(TESTs ${ROOT}/test)
@@ -18,7 +19,9 @@ set(TEST_OBJs
   # List's testcases
   ${TESTs}/list_test.c
   # Dict's testcases
-  ${TESTs}/dict_test.c)
+  ${TESTs}/dict_test.c
+  # TCDB Driver testcases
+  ${TESTs}/tcdbDriver_test.c)
 add_executable(unittest ${ROOT}/test/test.c ${TEST_OBJs} ${SRCFs})
 add_test(NAME valgrind_unittest
   	COMMAND valgrind --leak-check=full

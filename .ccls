@@ -1,5 +1,8 @@
 gcc
 %c -std=c11
 %h
+
 -Iinclude
 -Iinclude/lib
+-Isrc
+-Isrc/tcdb
