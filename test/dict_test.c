@@ -21,11 +21,13 @@ _Bool equal(void *l, void *r) {
     return !strcmp(l, r);
 }
 
-DictType test_dt = { test_hash,
-                      equal,
-                      strdup,
-                      free,
-                      free };
+DictType test_dt = {
+    test_hash,
+    equal,
+    strdup,
+    free,
+    free
+};
 
 CTEST_DATA(DictUT) {
   Dict *d;
