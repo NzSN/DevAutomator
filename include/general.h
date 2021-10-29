@@ -3,5 +3,6 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #endif /* _GENERAL_H_ */
