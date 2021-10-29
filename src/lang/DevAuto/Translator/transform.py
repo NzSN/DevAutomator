@@ -313,7 +313,22 @@ def da_if_transform(insts: dal.InstGrp,
            isinstance(test_result, dal.Var))
 
     # Create Jmp instruction
-    jmp_inst = dal.JmpTrue(test_result, core.DInt(len(elseBody)))
+    else_exists = len(elseBody) > 0
+    body_exists = len(body) > 0
+
+    if else_exists:
+        next_inst_idx =  len(elseBody) + 1 + len(insts)
+
+        jmp_inst = dal.JmpTrue(
+            test_result, core.DInt(next_inst_idx))
+    else:
+        if body_exists:
+            next_inst_idx = len(body) + 1 + len(insts)
+            jmp_inst = dal.JmpFalse(
+                test_result, core.DInt(next_inst_idx))
+        else:
+            return
+
     insts.addInst(jmp_inst)
     insts.addInsts(elseBody.insts())
     insts.addInsts(body.insts())
