@@ -6,7 +6,7 @@ import DevAuto.Core as core
 from DevAuto.Core import DStr
 import DevAuto.Translator.translator as trans
 from DevAuto import DFunc
-from DevAuto.lang_imp import InstGrp, Var
+from DevAuto.lang_imp import InstGrp
 from TestCases.CoreTestCases.devCore_Check import BoxMachine
 
 
@@ -166,9 +166,20 @@ def IfStmt_Case_2() -> bool:
 
     return True
 
+
+@DA.function(globals())
+def IfStmt_Case_3() -> bool:
+    box = BoxMachinePlus()
+
+    if box.query(DStr("ident")) == "Box":
+        v = core.DInt(1)
+
+    return True
+
+
 @pytest.fixture
 def IfStmts_Cases() -> typ.List[DFunc]:
-    return [IfStmt_Case_1, IfStmt_Case_2]
+    return [IfStmt_Case_1, IfStmt_Case_2, IfStmt_Case_3]
 
 
 
@@ -283,7 +294,7 @@ class Tr_TC:
         assert [str(inst) for inst in insts_1.insts()] == [
             "query [ident] <__VAR__0>",
             "equal [<__VAR__0> Box] <__VAR__1>",
-            "jmptrue <__VAR__1> 1",
+            "jmptrue <__VAR__1> 4",
             "def __VAR__2 2",
             "def __VAR__2 1"
         ]
@@ -295,14 +306,30 @@ class Tr_TC:
 
         for insts in insts_2.insts():
             print(insts)
-            1
+
         # Verify Case 2
         assert insts_2.duts() == ["Box"]
         assert [str(inst) for inst in insts_2.insts()] == [
             "query [ident] <__VAR__0>",
             "equal [<__VAR__0> Box] <__VAR__1>",
-            "jmptrue <__VAR__1> 0"
             # Cause v is not DA Object so there
             # is nothing need to be transformed into
             # Instructions.
+        ]
+
+    def test_If_Stmt_Transform_Case_3(self, Tr, IfStmts_Cases) -> None:
+        Case_3 = IfStmts_Cases[2]
+
+        insts_3 = Tr.trans(Case_3)
+
+        for insts in insts_3.insts():
+            print(insts)
+
+        # Verify Case 3
+        assert insts_3.duts() == ["Box"]
+        assert [str(inst) for inst in insts_3.insts()] == [
+            "query [ident] <__VAR__0>",
+            "equal [<__VAR__0> Box] <__VAR__1>",
+            "jmpfalse <__VAR__1> 4",
+            "def __VAR__2 1"
         ]

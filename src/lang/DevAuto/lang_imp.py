@@ -136,6 +136,23 @@ class JmpTrue(CInst):
         return "jmptrue " + str(self._test) + " " + str(self._idx)
 
 
+class JmpFalse(CInst):
+
+    def __init__(self, test: typ.Union[core.DBool, Var],
+                 idx: core.DInt) -> None:
+        self._test = test
+        self._idx = idx
+
+    def test(self) -> typ.Union[core.DBool, Var]:
+        return self._test
+
+    def goto_inst(self) -> core.DInt:
+        return self._idx
+
+    def __str__(self) -> str:
+        return "jmpfalse " + str(self._test) + " " + str(self._idx)
+
+
 class Jmpeq(CInst):
     ...
 
