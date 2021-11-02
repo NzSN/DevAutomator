@@ -77,14 +77,16 @@ private:
     string subDir;
 };
 
-
-std::map<string, std::function<unique_ptr<TCDB_Driver>(string, string)>> TCDB_ALLOCATOR{
-    // Git TCDB Driver Allocator
-    {"git", [](string addr, string path) -> unique_ptr<TCDB_Driver> {
-            return std::make_unique<TCDB_GitDriver>(addr, path); }},
-    // Local TCDB Driver Allocator
-    {"local", [](string addr, string path) -> unique_ptr<TCDB_Driver> {
-            return std::make_unique<TCDB_LocalDriver>(addr, path); }}
+class TCDB_ALLOCATOR {
+public:
+    using DriverFactory = std::function<unique_ptr<TCDB_Driver>(string, string)>;
+    DriverFactory& operator [](string driverName) {
+        return driverFactories[driverName];
+    }
+private:
+    std::map<string, DriverFactory> driverFactories;
 };
+
+extern TCDB_ALLOCATOR globalTcdbDriverAllocator;
 
 #endif /* TCDB_DRIVERS_H */

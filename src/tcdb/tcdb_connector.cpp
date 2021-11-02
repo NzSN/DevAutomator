@@ -4,7 +4,7 @@
 #include "tcdb_drivers.h"
 
 TCDB_Connector::TCDB_Connector(string address, string path, string driverName) {
-    auto allocator = TCDB_ALLOCATOR[driverName];
+    auto allocator = globalTcdbDriverAllocator[driverName];
     if (allocator == nullptr) {
         // Need to throw an exception
     }
