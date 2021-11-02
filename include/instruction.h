@@ -6,7 +6,7 @@
 
 typedef struct Inst {
     int opcode;
-    List args;
+    // List args;
     void *ret;
 } Inst;
 
@@ -29,6 +29,6 @@ Inst * instDivConst(Variable *l, Variable *r);
 #define instRet(I)    ((I)->ret)
 
 /* Prototypes */
-Inst * instCreate(int opcode, List args, void *ret);
+//Inst * instCreate(int opcode, List args, void *ret);
 
 #endif /* _INSTRUCTION_H_ */

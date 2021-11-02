@@ -1,6 +1,7 @@
-gcc
-%c -std=c11
-%h
+g++
+%cpp -std=c++14
+%h -x
+%h c++-header
 
 -Iinclude
 -Iinclude/lib

@@ -1,13 +1,22 @@
 #include "general.h"
 #include "tcdb_drivers.h"
+#include <memory>
 
-#ifndef _TCDB_CONECTOR_H_
-#define _TCDB_CONECTOR_H_
+using std::unique_ptr;
 
+#ifndef TCDB_CONNECTOR_H
+#define TCDB_CONNECTOR_H
 
-typedef struct TcdbConnector {
+class TCDB_Connector {
+public:
+    TCDB_Connector(string address,
+                   string path,
+                   string driverName);
+    ~TCDB_Connector();
 
+private:
+    unique_ptr<TCDB_Driver> driver;
 };
 
 
-#endif /* _TCDB_CONECTOR_H_ */
+#endif /* TCDB_CONNECTOR_H */
