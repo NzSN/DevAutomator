@@ -1,6 +1,11 @@
 #include "general.h"
+#include "testCase.h"
 #include "tcdb_drivers.h"
+#include <iostream>
+#include <fstream>
 #include <memory>
+#include <string>
+#include <vector>
 
 using std::unique_ptr;
 
@@ -12,8 +17,13 @@ public:
     TCDB_Connector(string address,
                    string path,
                    string driverName);
-    ~TCDB_Connector();
-
+    /**
+     * To Check that is driver work correctly.
+     */
+    bool checkDriver();
+    void update();
+    TestCase getTC(string tcName);
+    std::vector<TestCase> getGroup(string groupName);
 private:
     unique_ptr<TCDB_Driver> driver;
 };

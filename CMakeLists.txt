@@ -8,21 +8,30 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 set(ROOT .)
 set(SRCs ${ROOT}/src)
 set(Libs ${ROOT}/lib)
-set(CMAKE_C_STANDARD 11)
-set(SRCFs ${SRCs}/list.c ${SRCs}/dict.c ${SRCs}/tcdb/tcdb_drivers.c)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_EXPORT_COMPILE_COMMANDS)
+set(SRCFs ${SRCs}/tcdb/tcdb_drivers.cc)
 set(INCLUDE ${ROOT}/include ${ROOT}/include/lib 
 	    ${ROOT}/src ${ROOT}/src/tcdb)
-add_executable(binary ${SRCs}/main.c ${SRCFs})
+
+# Google Test
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+add_executable(binary ${SRCs}/main.cc ${SRCFs})
 
 set(TESTs ${ROOT}/test)
 set(TEST_OBJs
-  # List's testcases
-  ${TESTs}/list_test.c
-  # Dict's testcases
-  ${TESTs}/dict_test.c
   # TCDB Driver testcases
-  ${TESTs}/tcdbDriver_test.c)
-add_executable(unittest ${ROOT}/test/test.c ${TEST_OBJs} ${SRCFs})
+  ${TESTs}/tcdbDriver_test.cc)
+add_executable(unittest ${TEST_OBJs} ${SRCFs})
+target_link_libraries(unittest gtest_main)
 add_test(NAME valgrind_unittest
   	COMMAND valgrind --leak-check=full
                          --show-leak-kinds=all
