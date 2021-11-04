@@ -54,18 +54,15 @@ TEST_F(TCDB_10_100_Fixture, GetTestCase) {
 
 TEST_F(TCDB_10_100_Fixture, GetGroupOfTestCases) {
     for (int i = 0; i < 10; i++) {
-        optional<vector<TestCase>> tc = driver.getGroup(std::to_string(i));
-        EXPECT_EQ(tc.has_value(), true);
-        EXPECT_EQ(tc.value().size(), 100);
+        vector<TestCase> tc = driver.getGroup(std::to_string(i));
+        EXPECT_EQ(tc.size(), 100);
 
         for (int j = 0; j < 100; j++)
-            EXPECT_EQ(std::to_string(j), tc.value()[j].name());
+            EXPECT_EQ(std::to_string(j), tc[j].name());
     }
 }
 
 TEST_F(TCDB_10_100_Fixture, GetAllTestCases) {
-    optional<vector<TestCase>> tcs = driver.getAll();
-
-    EXPECT_EQ(tcs.has_value(), true);
-    EXPECT_EQ(tcs.value().size(), 1000);
+    vector<TestCase> tcs = driver.getAll();
+    EXPECT_EQ(tcs.size(), 1000);
 }

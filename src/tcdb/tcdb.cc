@@ -5,6 +5,7 @@
 
 
 void TCDB::addTC(TestCase tc) {
+    // TODO: Group name format checking
     string grp = tc.group();
 
     // TODO: Exception may throw during push_back
@@ -22,29 +23,29 @@ optional<TestCase> TCDB::getTC(string tcName, string group) {
     });
 
     if (tc == end(groupOfTcs)) {
-        return std::nullopt;
+        return {};
     }
 
     return *tc;
 }
 
 
-optional<vector<TestCase>>
+vector<TestCase>
 TCDB::getGroup(string grpName) {
     if (!db.contains(grpName)) {
-        return std::nullopt;
+        return {};
     }
 
     return db[grpName];
 }
 
 
-optional<vector<TestCase>>
+vector<TestCase>
 TCDB::getAll() {
     vector<TestCase> tcs;
 
     if (db.size() == 0) {
-        return std::nullopt;
+        return {};
     }
 
     for (auto& i: db) {
