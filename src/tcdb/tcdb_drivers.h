@@ -27,6 +27,13 @@ public:
 };
 
 
+class TCDB_ERROR_FORM: public std::runtime_error {
+public:
+  explicit TCDB_ERROR_FORM(const string address_)
+      : std::runtime_error(address_) {}
+};
+
+
 class TCDB_Driver {
 public:
     TCDB_Driver() = default;
@@ -83,7 +90,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 class TCDB_LOCAL_DOWN: public std::runtime_error {
 public:
-  TCDB_LOCAL_DOWN(const string s) : runtime_error(s) {}
+  explicit TCDB_LOCAL_DOWN(const string s) : runtime_error(s) {}
 };
 
 
@@ -91,10 +98,20 @@ class TCDB_LOCAL_FAILED_TO_RETRIEVE: public std::runtime_error {
 public:
     constexpr static int filesystem_error = 0;
     constexpr static int memAlloc_error = 1;
-    TCDB_LOCAL_FAILED_TO_RETRIEVE(const string s, int reason): runtime_error(s) {}
+    explicit TCDB_LOCAL_FAILED_TO_RETRIEVE(const string s, int reason): runtime_error(s) {}
+    int reason() const {
+        return error_type;
+    }
 private:
-    int reason;
+    int error_type;;
 };
+
+
+class TCDB_LOCAL_FAILED_TO_ACTIVE: public std::runtime_error {
+public:
+    explicit TCDB_LOCAL_FAILED_TO_ACTIVE(const string s) : runtime_error(s) {}
+};
+
 
 class TCDB_LocalDriver: public TCDB_Driver {
     /**

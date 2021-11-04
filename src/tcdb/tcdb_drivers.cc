@@ -1,9 +1,13 @@
 #include "tcdb_drivers.h"
+#include "tcdb.hpp"
 #include <filesystem>
 #include <exception>
+#include <assert.h>
+#include <stack>
+#include <utility>
 
 namespace fs = std::filesystem;
-using std::vector;
+using std::vector, std::stack, std::pair;
 
 
 TCDB_ALLOCATOR tcdbDriverAllocator = {
@@ -42,19 +46,75 @@ bool TCDB_GitDriver::active() {
 //                       Local File System TCDB_Driver                       //
 ///////////////////////////////////////////////////////////////////////////////
 namespace {
-    TestCase fileToTestCase(fs::recursive_directory_iterator &) {
+    /**
+     * Assume that the file correspond with path is a directory.
+     */
+    void buildTCDB(TCDB &db, const string &path) {
+        auto ii = fs::recursive_directory_iterator(path);
+        stack<pair<string, int>> groupStatus;
+
+        // Setup Initial state
+        // All TestCases without Group will
+        // reside in 'Default' Group.
+        groupStatus.push({"Default", 0});
+
+        for (auto i = fs::recursive_directory_iterator(path);
+             i != fs::recursive_directory_iterator(); ++i) {
+
+          // Depth Checking
+          int currentDepth = groupStatus.top().second;
+          if (currentDepth > 1) {
+            // TODO: This disobey the rule of TCDB.
+            throw TCDB_ERROR_FORM("TCDB_LocalDriver: Directory's depth \
+                                      level must not bigger than 1.");
+          }
+          if (i.depth() < currentDepth) {
+            groupStatus.pop();
+          }
+
+          if (i->is_regular_file()) {
+            // Create Testcase
+            TestCase tc = {// TestCase Name
+                           i->path().filename(),
+                           // TestCase Group
+                           groupStatus.top().first,
+                           // TestCase File Path
+                           i->path()};
+
+            db.addTC(tc);
+          } else if (i->is_directory()) {
+            // Goto Group
+            groupStatus.push({
+                    // Directory's name is the name of
+                    // group.
+                    i->path().filename(),
+                    // Go into subdir
+                    i.depth() + 1 });
+          }
+        }
+    }
+
+    void tcdbClone(TCDB &db, const string &address, const string &dirPath) {
+
+        try {
+            if (address != dirPath) {
+                fs::copy(address, dirPath, fs::copy_options::recursive);
+            }
+        } catch (const fs::filesystem_error &e) {
+            throw TCDB_LOCAL_FAILED_TO_RETRIEVE(
+                "Failed to retrieve TestCases",
+                TCDB_LOCAL_FAILED_TO_RETRIEVE::filesystem_error);
+        } catch (std::bad_alloc) {
+            throw TCDB_LOCAL_FAILED_TO_RETRIEVE(
+                "Failed to retrieve TestCases",
+                TCDB_LOCAL_FAILED_TO_RETRIEVE::memAlloc_error);
+        }
+
+        // Rebuild TCDB
+        buildTCDB(db, dirPath);
 
     }
 
-
-    vector<TestCase> directoryToTestCases(fs::recursive_directory_iterator &) {
-
-    }
-
-
-    vector<TestCase> tcdbToTestCases(const string &) {
-
-    }
 }
 
 
@@ -67,23 +127,8 @@ vector<TestCase> TCDB_LocalDriver::retriAll() {
         throw TCDB_LOCAL_DOWN("Need to Active TCDB");
     }
 
-    try {
-        if (address != dirPath) {
-            fs::copy(address, dirPath, fs::copy_options::recursive);
-        }
-    } catch (const fs::filesystem_error &e) {
-        throw TCDB_LOCAL_FAILED_TO_RETRIEVE(
-            "Failed to retrieve TestCases",
-            TCDB_LOCAL_FAILED_TO_RETRIEVE::filesystem_error);
-    } catch (std::bad_alloc) {
-        throw TCDB_LOCAL_FAILED_TO_RETRIEVE(
-            "Failed to retrieve TestCases",
-            TCDB_LOCAL_FAILED_TO_RETRIEVE::memAlloc_error);
-    }
-
-    vector<TestCase> tcs = tcdbToTestCases(dirPath);
-
-    return tcs;
+    tcdbClone(db, address, dirPath);
+    return db.getAll();
 }
 
 bool TCDB_LocalDriver::isAlive() {
@@ -91,13 +136,29 @@ bool TCDB_LocalDriver::isAlive() {
 }
 
 bool TCDB_LocalDriver::active() {
-    if (!fs::exists(address)) {
+    if (!fs::exists(address) || !fs::is_directory(address)) {
         throw TCDB_NOT_EXISTS(address);
     }
 
-    // Retrieve all TestCase in to local
-    // directory.
-    retriAll();
+    try {
+        // Clone TCDB from address to dirPath
+        // and buildup TCDB object.
+        tcdbClone(db, address, dirPath);
+    } catch (const TCDB_LOCAL_FAILED_TO_RETRIEVE &e) {
+        switch (e.reason()) {
+        case TCDB_LOCAL_FAILED_TO_RETRIEVE::filesystem_error: {
+            throw TCDB_LOCAL_FAILED_TO_ACTIVE("Filesystem error");
+            break;
+        }
+        case TCDB_LOCAL_FAILED_TO_RETRIEVE::memAlloc_error: {
+            throw TCDB_LOCAL_FAILED_TO_ACTIVE("Memory allocation error");
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
     isActive = true;
 
     return true;
