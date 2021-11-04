@@ -2,7 +2,6 @@ g++
 %cpp -std=c++20
 %h -x
 %h c++-header
-
 -Iinclude
 -Iinclude/lib
 -Isrc

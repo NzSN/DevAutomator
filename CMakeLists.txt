@@ -4,13 +4,14 @@ enable_testing()
 
 # Project define
 project(DevAutomator)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g")
 set(ROOT .)
 set(SRCs ${ROOT}/src)
 set(Libs ${ROOT}/lib)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS)
-set(SRCFs ${SRCs}/tcdb/tcdb_drivers.cc)
+set(SRCFs ${SRCs}/tcdb/tcdb_drivers.cc
+	${SRCs}/tcdb/tcdb.cc)
 set(INCLUDE ${ROOT}/include ${ROOT}/include/lib 
 	    ${ROOT}/src ${ROOT}/src/tcdb)
 
@@ -29,7 +30,9 @@ add_executable(binary ${SRCs}/main.cc ${SRCFs})
 set(TESTs ${ROOT}/test)
 set(TEST_OBJs
   # TCDB Driver testcases
-  ${TESTs}/tcdbDriver_test.cc)
+  ${TESTs}/tcdbDriver_test.cc
+  # TCDB testcases
+  ${TESTs}/tcdb_test.cc)
 add_executable(unittest ${TEST_OBJs} ${SRCFs})
 target_link_libraries(unittest gtest_main)
 add_test(NAME valgrind_unittest
@@ -37,5 +40,5 @@ add_test(NAME valgrind_unittest
                          --show-leak-kinds=all
                          --track-origins=yes
 			 --error-exitcode=1
-                         --verbose ./unittest)
+                         --verbose ./build/unittest)
 include_directories(${INCLUDE})

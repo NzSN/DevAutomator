@@ -7,6 +7,7 @@
 #include <vector>
 #include <utility>
 #include <exception>
+#include "tcdb.hpp"
 
 using std::string;
 using std::unique_ptr;
@@ -45,6 +46,7 @@ protected:
     string dirPath;
     // Address Information to connect to TCDB.
     string address;
+    TCDB db;
 };
 
 
@@ -107,7 +109,6 @@ public:
     std::vector<TestCase> retriAll() override;
     bool isAlive() override;
     bool active() override;
-
 private:
     bool isActive;
 };
