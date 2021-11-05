@@ -15,6 +15,7 @@ using std::map, std::string, std::vector, std::optional;
 class TCDB {
 public:
     TCDB() = default;
+    ~TCDB() {}
     void addTC(TestCase tc);
     optional<TestCase> getTC(string tcName, string group);
     vector<TestCase> getGroup(string grpName);

@@ -19,21 +19,21 @@ TCDB_Connector::TCDB_Connector(string address, string path, string driverName) {
     driver->setDirPath(path);
 }
 
-void TCDB_Connector::update() {
-    if (checkDriver() == false) {
-        // TODO: Handle Driver incorrect status.
-    }
-    // Do update from TCDB
+bool TCDB_Connector::active() {
+    return driver->active();
 }
 
 
-TestCase TCDB_Connector::getTC(string tcName) {
-    update();
-    return driver->retriByIdent(tcName);
+optional<TestCase> TCDB_Connector::getTC(string tcName, string group) {
+    return driver->retriByIdent(tcName, group);
 }
 
 
-std::vector<TestCase> TCDB_Connector::getGroup(string grpName) {
-    update();
+vector<TestCase> TCDB_Connector::getGroup(string grpName) {
     return driver->retriByType(grpName);
+}
+
+
+vector<TestCase> TCDB_Connector::getAll() {
+    return driver->retriAll();
 }
