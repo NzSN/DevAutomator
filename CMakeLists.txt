@@ -11,7 +11,8 @@ set(Libs ${ROOT}/lib)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS)
 set(SRCFs ${SRCs}/tcdb/tcdb_drivers.cc
-	${SRCs}/tcdb/tcdb.cc)
+  ${SRCs}/tcdb/tcdb.cc
+  ${SRCs}/tcdb/tcdb_connector.cc)
 set(INCLUDE ${ROOT}/include ${ROOT}/include/lib 
 	    ${ROOT}/src ${ROOT}/src/tcdb)
 
@@ -32,7 +33,10 @@ set(TEST_OBJs
   # TCDB Driver testcases
   ${TESTs}/tcdbDriver_test.cc
   # TCDB testcases
-  ${TESTs}/tcdb_test.cc)
+  ${TESTs}/tcdb_test.cc
+  # TCDB Connector testcases
+  ${TESTs}/tcdbConnector_test.cc)
+
 add_executable(unittest ${TEST_OBJs} ${SRCFs})
 target_link_libraries(unittest gtest_main)
 add_test(NAME UNITTESTING_WITH_MEMORY_LEAK_CHECK
