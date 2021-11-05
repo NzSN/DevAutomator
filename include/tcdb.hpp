@@ -16,7 +16,7 @@ class TCDB {
 public:
     TCDB() = default;
     void addTC(TestCase tc);
-    optional<TestCase> getTC(string group, string tcName);
+    optional<TestCase> getTC(string tcName, string group);
     vector<TestCase> getGroup(string grpName);
     vector<TestCase> getAll();
     size_t size() const {
