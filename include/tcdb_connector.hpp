@@ -1,4 +1,4 @@
-#include "general.h"
+#include "general.hpp"
 #include "testCase.h"
 #include "tcdb_drivers.h"
 #include <iostream>

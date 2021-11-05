@@ -1,4 +1,4 @@
-#include "general.h"
+#include "general.hpp"
 #include "tcdb.hpp"
 #include <algorithm>
 #include <iterator>

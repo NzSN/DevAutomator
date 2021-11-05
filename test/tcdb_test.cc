@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "tcdb.hpp"
-#include "testCase.h"
+#include "testCase.hpp"
 
 
 class EMPTY_TCDB_Fixture: public ::testing::Test {

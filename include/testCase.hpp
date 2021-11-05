@@ -1,4 +1,4 @@
-#include "general.h"
+#include "general.hpp"
 #include <fstream>
 #include <string>
 #include <iostream>

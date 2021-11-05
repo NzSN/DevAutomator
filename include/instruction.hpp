@@ -1,4 +1,4 @@
-#include "general.h"
+#include "general.hpp"
 #include "list.h"
 
 #ifndef _INSTRUCTION_H_

@@ -1,10 +1,10 @@
-#include "general.h"
+#include "general.hpp"
 #include <iostream>
 #include <map>
 #include <vector>
 #include <string>
 #include <optional>
-#include "testCase.h"
+#include "testCase.hpp"
 #include <optional>
 
 using std::map, std::string, std::vector, std::optional;

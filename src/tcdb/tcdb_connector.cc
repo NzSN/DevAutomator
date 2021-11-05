@@ -1,7 +1,7 @@
 #include <memory>
 #include <functional>
-#include "tcdb_connector.h"
-#include "tcdb_drivers.h"
+#include "tcdb_connector.hpp"
+#include "tcdb_drivers.hpp"
 #include <assert.h>
 
 
