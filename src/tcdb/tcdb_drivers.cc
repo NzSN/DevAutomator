@@ -106,7 +106,7 @@ namespace {
             throw TCDB_LOCAL_FAILED_TO_RETRIEVE(
                 "Failed to retrieve TestCases",
                 TCDB_LOCAL_FAILED_TO_RETRIEVE::filesystem_error);
-        } catch (std::bad_alloc) {
+        } catch (std::bad_alloc &e) {
             throw TCDB_LOCAL_FAILED_TO_RETRIEVE(
                 "Failed to retrieve TestCases",
                 TCDB_LOCAL_FAILED_TO_RETRIEVE::memAlloc_error);

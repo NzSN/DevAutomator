@@ -3,7 +3,6 @@
  * TODO: Provide Synchronization to TCDB_LocalDriver.
  *     TCDB in Filesystem need to provide a file that contain
  *     meta datas of it and Driver able to sync TCDB with helps
- *     from the meta file.
  */
 
 
@@ -48,6 +47,8 @@ class TCDB_Driver {
 public:
     TCDB_Driver() = default;
     TCDB_Driver(string address, string dirPath);
+    virtual ~TCDB_Driver() {}
+
     // Retrieve TestCase by it's identifier
     virtual optional<TestCase> retriByIdent(string ident, string type) = 0;
     // Retrieve all TestCases of the given type
@@ -77,7 +78,6 @@ class TCDB_GitDriver: public TCDB_Driver {
      */
 public:
     using TCDB_Driver::TCDB_Driver;
-
     optional<TestCase> retriByIdent(string ident, string type) override;
     std::vector<TestCase> retriByType(string type) override;
     std::vector<TestCase> retriAll() override;
@@ -108,7 +108,8 @@ class TCDB_LOCAL_FAILED_TO_RETRIEVE: public std::runtime_error {
 public:
     constexpr static int filesystem_error = 0;
     constexpr static int memAlloc_error = 1;
-    explicit TCDB_LOCAL_FAILED_TO_RETRIEVE(const string s, int reason): runtime_error(s) {}
+    explicit TCDB_LOCAL_FAILED_TO_RETRIEVE(const string s, int reason):
+        runtime_error(s), error_type(reason) {}
     int reason() const {
         return error_type;
     }
