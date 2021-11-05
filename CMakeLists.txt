@@ -35,10 +35,10 @@ set(TEST_OBJs
   ${TESTs}/tcdb_test.cc)
 add_executable(unittest ${TEST_OBJs} ${SRCFs})
 target_link_libraries(unittest gtest_main)
-add_test(NAME valgrind_unittest
+add_test(NAME UNITTESTING_WITH_MEMORY_LEAK_CHECK
   	COMMAND valgrind --leak-check=full
                          --show-leak-kinds=all
                          --track-origins=yes
 			 --error-exitcode=1
-                         --verbose ./build/unittest)
+                         --verbose ./unittest)
 include_directories(${INCLUDE})
