@@ -5,9 +5,11 @@
 #include <assert.h>
 #include <stack>
 #include <utility>
+#include <optional>
 
 namespace fs = std::filesystem;
 using std::vector, std::stack, std::pair;
+using std::optional;
 
 
 TCDB_ALLOCATOR tcdbDriverAllocator = {
@@ -27,7 +29,7 @@ TCDB_Driver::TCDB_Driver(string address_, string dirPath_)
 ///////////////////////////////////////////////////////////////////////////////
 //                              Git TCDB_Driver                              //
 ///////////////////////////////////////////////////////////////////////////////
-TestCase TCDB_GitDriver::retriByIdent(string ident) {}
+optional<TestCase> TCDB_GitDriver::retriByIdent(string ident, string type) {}
 
 vector<TestCase> TCDB_GitDriver::retriByType(string type) {}
 
@@ -112,22 +114,22 @@ namespace {
 
         // Rebuild TCDB
         buildTCDB(db, dirPath);
-
     }
-
 }
 
+optional<TestCase> TCDB_LocalDriver::retriByIdent(string ident, string type) {
+    return db.getTC(ident, type);
+}
 
-TestCase TCDB_LocalDriver::retriByIdent(string ident) {}
-
-vector<TestCase> TCDB_LocalDriver::retriByType(string type) {}
+vector<TestCase> TCDB_LocalDriver::retriByType(string type) {
+    return db.getGroup(type);
+}
 
 vector<TestCase> TCDB_LocalDriver::retriAll() {
     if (!isAlive()) {
         throw TCDB_LOCAL_DOWN("Need to Active TCDB");
     }
 
-    tcdbClone(db, address, dirPath);
     return db.getAll();
 }
 
@@ -162,4 +164,8 @@ bool TCDB_LocalDriver::active() {
     isActive = true;
 
     return true;
+}
+
+TCDB_LocalDriver::~TCDB_LocalDriver() {
+    fs::remove_all(dirPath);
 }

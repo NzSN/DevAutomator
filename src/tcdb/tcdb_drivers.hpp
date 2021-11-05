@@ -1,3 +1,13 @@
+/**
+ * 2021/11/5:
+ * TODO: Provide Synchronization to TCDB_LocalDriver.
+ *     TCDB in Filesystem need to provide a file that contain
+ *     meta datas of it and Driver able to sync TCDB with helps
+ *     from the meta file.
+ */
+
+
+
 #include "testCase.hpp"
 #include <string>
 #include <map>
@@ -39,7 +49,7 @@ public:
     TCDB_Driver() = default;
     TCDB_Driver(string address, string dirPath);
     // Retrieve TestCase by it's identifier
-    virtual TestCase retriByIdent(string ident) = 0;
+    virtual optional<TestCase> retriByIdent(string ident, string type) = 0;
     // Retrieve all TestCases of the given type
     virtual std::vector<TestCase> retriByType(string type) = 0;
     virtual std::vector<TestCase> retriAll() = 0;
@@ -68,7 +78,7 @@ class TCDB_GitDriver: public TCDB_Driver {
 public:
     using TCDB_Driver::TCDB_Driver;
 
-    TestCase retriByIdent(string ident) override;
+    optional<TestCase> retriByIdent(string ident, string type) override;
     std::vector<TestCase> retriByType(string type) override;
     std::vector<TestCase> retriAll() override;
     bool isAlive() override;
@@ -120,14 +130,15 @@ class TCDB_LocalDriver: public TCDB_Driver {
      */
 public:
     using TCDB_Driver::TCDB_Driver;
+    ~TCDB_LocalDriver();
 
-    TestCase retriByIdent(string ident) override;
+    optional<TestCase> retriByIdent(string ident, string type) override;
     std::vector<TestCase> retriByType(string type) override;
     std::vector<TestCase> retriAll() override;
     bool isAlive() override;
     bool active() override;
 private:
-    bool isActive;
+    bool isActive = false;
 };
 
 
