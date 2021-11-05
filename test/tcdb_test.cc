@@ -24,7 +24,7 @@ protected:
 };
 
 
-TEST_F(EMPTY_TCDB_Fixture, AddTestCases) {
+TEST_F(EMPTY_TCDB_Fixture, AddTestCasesCheck) {
     constexpr int count = 10000;
 
     for (int i = 0; i < count; i++) {
@@ -35,7 +35,7 @@ TEST_F(EMPTY_TCDB_Fixture, AddTestCases) {
 }
 
 
-TEST_F(TCDB_10_100_Fixture, GetTestCase) {
+TEST_F(TCDB_10_100_Fixture, GetTestCaseCheck) {
     string grp, name;
     optional<TestCase> tc;
 
@@ -52,7 +52,7 @@ TEST_F(TCDB_10_100_Fixture, GetTestCase) {
     }
 }
 
-TEST_F(TCDB_10_100_Fixture, GetGroupOfTestCases) {
+TEST_F(TCDB_10_100_Fixture, GetGroupOfTestCasesCheck) {
     for (int i = 0; i < 10; i++) {
         vector<TestCase> tc = driver.getGroup(std::to_string(i));
         EXPECT_EQ(tc.size(), 100);
@@ -62,7 +62,7 @@ TEST_F(TCDB_10_100_Fixture, GetGroupOfTestCases) {
     }
 }
 
-TEST_F(TCDB_10_100_Fixture, GetAllTestCases) {
+TEST_F(TCDB_10_100_Fixture, GetAllTestCasesCheck) {
     vector<TestCase> tcs = driver.getAll();
     EXPECT_EQ(tcs.size(), 1000);
 }
