@@ -68,7 +68,7 @@ namespace {
           if (currentDepth > 1) {
             // TODO: This disobey the rule of TCDB.
             throw TCDB_ERROR_FORM("TCDB_LocalDriver: Directory's depth \
-                                      level must not bigger than 1.");
+                                   level must not bigger than 1.");
           }
           if (i.depth() < currentDepth) {
             groupStatus.pop();
