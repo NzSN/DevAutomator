@@ -6,3 +6,4 @@ g++
 -Iinclude/lib
 -Isrc
 -Isrc/tcdb
+-I/usr/include/python3.8
