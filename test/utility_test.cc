@@ -50,7 +50,9 @@ protected:
 
 
 TEST_F(PyFuncEvalTest_Fixture, Eval) {
-    std::optional<PyObject_ptr> objPtr = pyFuncEvaluate(path+"/"+modName);
+    std::wstring wpath(path.begin(), path.end());
+    std::optional<PyObject_ptr> objPtr =
+        pyFuncEvaluate(path+"/"+modName, wpath);
     EXPECT_NE(objPtr.has_value(), NULL);
 
     PyObject_ptr &ptr = objPtr.value();

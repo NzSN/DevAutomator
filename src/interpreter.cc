@@ -12,7 +12,8 @@ namespace Interpreter_Internal {
 
 Job Interpreter::interpret(TestCase &tc) {
     // Evaluate TestCase
-    std::optional<PyObject_ptr> PyInstsMaybe = pyFuncEvaluate(fs::path(tc.path()), "main");
+    // Caution: modulePath should be configured by user.
+    std::optional<PyObject_ptr> PyInstsMaybe = pyFuncEvaluate(fs::path(tc.path()), L"");
     if (!PyInstsMaybe.has_value()) {
         throw std::runtime_error("Failed to eval python function");
     }

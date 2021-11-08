@@ -9,6 +9,7 @@
 
 using PyObject_ptr = std::unique_ptr<PyObject, void(*)(PyObject*)>;
 
-std::optional<PyObject_ptr> pyFuncEvaluate(std::filesystem::path p, std::string func = "main");
+std::optional<PyObject_ptr>
+pyFuncEvaluate(std::filesystem::path p, std::wstring modulePath, std::string func = "main");
 
 #endif /* UTILITY_H */

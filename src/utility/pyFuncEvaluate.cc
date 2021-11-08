@@ -6,7 +6,7 @@
 #include <optional>
 
 
-using std::string, std::filesystem::path;
+using std::string, std::wstring, std::filesystem::path;
 using std::optional;
 
 
@@ -15,16 +15,14 @@ void PyObjDeleter(PyObject *obj) {
  }
 
 
-std::optional<PyObject_ptr> pyFuncEvaluate(path p, string func) {
+std::optional<PyObject_ptr> pyFuncEvaluate(path p, wstring modulePath, string func) {
     PyObject *pValue = NULL, *pFunc = NULL;
 
-    Py_Initialize();
+    wstring oldPath = Py_GetPath();
+    wstring newPath = oldPath + L":" + modulePath;
+    Py_SetPath(newPath.c_str());
 
-    // Add parent path of TestCase into PATH otherwise
-    // Python Interpreter unable to load the module.
-    PyRun_SimpleString("import sys");
-    string modPath = "sys.path.append('" + p.parent_path().string() + "')";
-    PyRun_SimpleString(modPath.c_str());
+    Py_Initialize();
 
     PyObject *pName = PyUnicode_DecodeFSDefault(p.filename().c_str());
     PyObject *pModule = PyImport_Import(pName);
