@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 enable_testing()
 
@@ -12,7 +12,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS)
 set(SRCFs ${SRCs}/tcdb/tcdb_drivers.cc
   ${SRCs}/tcdb/tcdb.cc
-  ${SRCs}/tcdb/tcdb_connector.cc)
+  ${SRCs}/tcdb/tcdb_connector.cc
+  ${SRCs}/interpreter.cc
+  ${SRCs}/utility/pyFuncEvaluate.cc)
 set(INCLUDE ${ROOT}/include ${ROOT}/include/lib 
 	    ${ROOT}/src ${ROOT}/src/tcdb)
 
@@ -26,7 +28,16 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+
+# Add Python Support
+set(Python_ADDITIONAL_VERSIONS 3.8)
+find_package(PythonLibs 3 REQUIRED)
+
+
 add_executable(binary ${SRCs}/main.cc ${SRCFs})
+target_link_libraries(binary ${PYTHON_LIBRARIES})
+include_directories(${PYTHON_INCLUDE_DIRS})
+
 
 set(TESTs ${ROOT}/test)
 set(TEST_OBJs
@@ -35,14 +46,27 @@ set(TEST_OBJs
   # TCDB testcases
   ${TESTs}/tcdb_test.cc
   # TCDB Connector testcases
-  ${TESTs}/tcdbConnector_test.cc)
+  ${TESTs}/tcdbConnector_test.cc
+  # Interpreter testcases
+  ${TESTs}/interpreter_test.cc
+  # Utility testcases
+  ${TESTs}/utility_test.cc)
+
 
 add_executable(unittest ${TEST_OBJs} ${SRCFs})
+include_directories(${INCLUDE})
+
+# Link Python
+target_link_libraries(unittest ${PYTHON_LIBRARIES})
+include_directories(${PYTHON_INCLUDE_DIRS})
+
+# Link Google Test
 target_link_libraries(unittest gtest_main)
+
+# Memory check
 add_test(NAME UNITTESTING_WITH_MEMORY_LEAK_CHECK
   	COMMAND valgrind --leak-check=full
                          --show-leak-kinds=all
                          --track-origins=yes
 			 --error-exitcode=1
                          --verbose ./unittest)
-include_directories(${INCLUDE})
