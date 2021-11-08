@@ -5,16 +5,16 @@
 namespace fs = std::filesystem;
 using std::unique_ptr;
 
-namespace {
-    void * PyInstsToNativeInsts(unique_ptr<PyObject> &PyInsts) {
-
-    }
+namespace Interpreter_Internal {
+    void * PyInstsToNativeInsts(PyObject_ptr &PyInsts) {}
 }
 
 Job Interpreter::interpret(TestCase &tc) {
     // Evaluate TestCase
-    unique_ptr<PyObject> PyInsts = pyFuncEvaluate(fs::path(tc.path()));
+    PyObject_ptr PyInsts = pyFuncEvaluate(fs::path(tc.path()), "main");
 
     // Transform PyInsts into C++-Insts
-    void *insts = PyInstsToNativeInsts(PyInsts);
+    void *insts = Interpreter_Internal::PyInstsToNativeInsts(PyInsts);
+
+    return {};
 }
