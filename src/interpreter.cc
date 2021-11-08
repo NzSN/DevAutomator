@@ -1,6 +1,7 @@
 #include "interpreter.hpp"
 #include "utility.hpp"
 #include <memory>
+#include <exception>
 
 namespace fs = std::filesystem;
 using std::unique_ptr;
@@ -11,10 +12,13 @@ namespace Interpreter_Internal {
 
 Job Interpreter::interpret(TestCase &tc) {
     // Evaluate TestCase
-    PyObject_ptr PyInsts = pyFuncEvaluate(fs::path(tc.path()), "main");
+    std::optional<PyObject_ptr> PyInstsMaybe = pyFuncEvaluate(fs::path(tc.path()), "main");
+    if (!PyInstsMaybe.has_value()) {
+        throw std::runtime_error("Failed to eval python function");
+    }
 
     // Transform PyInsts into C++-Insts
-    void *insts = Interpreter_Internal::PyInstsToNativeInsts(PyInsts);
+    void *insts = Interpreter_Internal::PyInstsToNativeInsts(PyInstsMaybe.value());
 
     return {};
 }
