@@ -1,6 +1,7 @@
 #include "general.hpp"
 #include "testCase.hpp"
-#include "job.hpp"
+#include "DAL/instruction.hpp"
+#include <filesystem>
 
 
 #ifndef INTERPRETER_H
@@ -8,7 +9,7 @@
 
 class Interpreter {
 public:
-    Job interpret(TestCase &tc);
+    InstructionSet interpret(TestCase &tc, std::filesystem::path transPath);
 };
 
 #endif /* INTERPRETER_H */

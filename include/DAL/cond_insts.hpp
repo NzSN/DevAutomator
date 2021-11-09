@@ -1,5 +1,7 @@
 #include "general.hpp"
 #include "DAL/instruction.hpp"
+#include "environment.hpp"
+#include <Python.h>
 #include <functional>
 
 using std::function;
@@ -16,10 +18,17 @@ class JMP : public CONDInst {
 public:
     JMP(int idx) : CONDInst(JMP_INST),
                    toIdx(idx) {}
+    JMP(PyObject *PyJmp) :
+        CONDInst(JMP_INST),
+        toIdx(PyLong_AsLong(PyObject_GetAttr(
+              PyJmp, PyUnicode_FromString("_to")))) {}
+    ~JMP() {}
     int where() const {
         return toIdx;
     }
-private:
+
+    void eval(DAL_Environment &env);
+protected:
     int toIdx;
 };
 
@@ -32,7 +41,10 @@ class JMP_TRUE: public JMP {
      */
 public:
     JMP_TRUE(int idx, TERM cond_) :
-        JMP(idx), cond(cond_) {}
+        JMP(idx), cond(cond_) {
+        toIdx = JMP_TRUE_INST;
+    }
+    JMP_TRUE(PyObject *PyJmp): JMP(PyJmp) {}
     TERM condition() {
         return cond;
     }
@@ -49,7 +61,11 @@ class JMP_FALSE: public JMP {
      */
 public:
     JMP_FALSE(int idx, TERM cond_) :
-        JMP(idx), cond(cond_) {}
+        JMP(idx), cond(cond_) {
+        toIdx = JMP_FALSE_INST;
+    }
+    JMP_FALSE(PyObject *PyJmp) : JMP(PyJmp) {}
+
     TERM condition() {
         return cond;
     }

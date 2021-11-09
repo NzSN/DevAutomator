@@ -1,4 +1,8 @@
 #include "general.hpp"
+#include <vector>
+#include <iterator>
+#include <memory>
+#include "DAL/environment.hpp"
 
 #ifndef INSTRUCTION_H
 #define INSTRUCTION_H
@@ -6,6 +10,7 @@
 typedef enum {
     JMP_INST = 0,
     JMP_TRUE_INST,
+    JMP_FALSE_INST,
     DEF_INST,
     EQUAL_INST,
 } InstCode;
@@ -17,18 +22,41 @@ public:
     int code() const {
         return iCode;
     }
+    virtual void eval(DAL_Environment&) = 0;
 protected:
     // Instruction Code it's identifer of
     // Instructions.
     InstCode iCode;
 };
 
+using InstPtr = std::shared_ptr<Instruction>;
 
-class CONDInst: public Instruction {
+
+class InstructionSet {
+public:
+    auto begin() {
+        return insts.begin();
+    }
+
+    auto end() {
+        return insts.end();
+    }
+
+    void append(InstPtr inst) {
+        insts.push_back(inst);
+    }
+
+    void eval(DAL_Environment &env);
+
+private:
+    std::vector<InstPtr> insts;
+};
+
+
+class CONDInst : public Instruction {
 public:
   CONDInst(InstCode iCode_) : Instruction(iCode_) {}
 };
-
 
 class OPERInst: public Instruction {
 public:

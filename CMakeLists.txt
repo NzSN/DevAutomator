@@ -10,13 +10,16 @@ set(SRCs ${ROOT}/src)
 set(Libs ${ROOT}/lib)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS)
-set(SRCFs ${SRCs}/tcdb/tcdb_drivers.cc
+set(SRCFs
+  ${SRCs}/tcdb/tcdb_drivers.cc
   ${SRCs}/tcdb/tcdb.cc
   ${SRCs}/tcdb/tcdb_connector.cc
   ${SRCs}/interpreter.cc
   ${SRCs}/utility/pyFuncEvaluate.cc)
-set(INCLUDE ${ROOT}/include ${ROOT}/include/lib 
-	    ${ROOT}/src ${ROOT}/src/tcdb)
+set(INCLUDE
+  ${ROOT}/include
+  ${ROOT}/include/lib
+  ${ROOT}/src ${ROOT}/src/tcdb)
 
 # Google Test
 include(FetchContent)
