@@ -7,3 +7,4 @@ g++
 -Isrc
 -Isrc/tcdb
 -I/usr/include/python3.8
+-Iinclude/DAL
