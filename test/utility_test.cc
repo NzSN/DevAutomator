@@ -6,10 +6,10 @@
 #include <Python.h>
 
 namespace fs = std::filesystem;
-using std::string, std::ofstream;
+using std::string, std::ofstream, std::wstring;
 
 
-class PyFuncEvalTest_Fixture: public ::testing::Test {
+class DISABLED_PyFuncEvalTest_Fixture: public ::testing::Test {
     /**
      * This fixture create a directory which contain
      * a python module named "m" that consist of functions:
@@ -49,13 +49,27 @@ protected:
 };
 
 
-TEST_F(PyFuncEvalTest_Fixture, Eval) {
+TEST_F(DISABLED_PyFuncEvalTest_Fixture, Eval) {
+
+    // Setup Module Path then
+    // Init Python Interpreter
+    wstring oldPath = Py_GetPath();
     std::wstring wpath(path.begin(), path.end());
+    wstring newPath = oldPath + L":" + wpath;
+    Py_SetPath(newPath.c_str());
+
+    Py_Initialize();
+
+    // Testing
     std::optional<PyObject_ptr> objPtr =
-        pyFuncEvaluate(path+"/"+modName, wpath);
+        pyFuncEvaluate(path+"/"+modName);
     EXPECT_NE(objPtr.has_value(), NULL);
 
     PyObject_ptr &ptr = objPtr.value();
     int value = PyLong_AsLong(&(*ptr));
     EXPECT_EQ(value, 1);
+
+    // Done
+    ptr.reset();
+    EXPECT_EQ(Py_FinalizeEx(), 0);
 }

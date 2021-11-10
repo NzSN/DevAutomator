@@ -15,10 +15,7 @@ class DEF : public VARInst {
 public:
     DEF(string ident_, string value_) :
         VARInst(DEF_INST), ident(ident_), varValue(value_) {}
-    DEF(PyObject *PyDef): VARInst(DEF_INST) {
-
-    }
-    ~DEF() {}
+    DEF(PyObject *PyDef);
 
     string identifier() {
         return ident;
@@ -41,10 +38,10 @@ public:
     EQUAL(TERM left, TERM right) :
         VARInst(EQUAL_INST), leftTerm(left), rightTerm(right) {}
     EQUAL(PyObject *PyEqual):
-        VARInst(EQUAL_INST) {
-
-    }
+        VARInst(EQUAL_INST) {}
     ~EQUAL() {}
+
+    void eval(DAL_Environment &);
 
     TERM left() {
         return leftTerm;
@@ -54,7 +51,6 @@ public:
         return rightTerm;
     }
 
-    void eval(DAL_Environment &env);
   private:
     TERM leftTerm;
     TERM rightTerm;

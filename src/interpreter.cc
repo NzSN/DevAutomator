@@ -13,8 +13,8 @@ using std::unique_ptr, std::shared_ptr;
 namespace Interpreter_Internal {
 
     shared_ptr<Instruction> instTrans(PyObject *PyInst) {
-        int opcode = PyLong_AsLong(PyObject_GetAttr(
-            PyInst, PyUnicode_FromString("_inst_code")));
+        string opcode = PyUnicode_AsUTF8(
+            PyObject_GetAttr(PyInst, PyUnicode_FromString("_inst_code")));
 
         switch (opcode) {
         case JMP_INST: {
@@ -33,7 +33,6 @@ namespace Interpreter_Internal {
             return std::make_shared<EQUAL>(PyInst);
         }
         }
-
         return NULL;
     }
 
@@ -64,11 +63,11 @@ namespace Interpreter_Internal {
 }
 
 
-InstructionSet Interpreter::interpret(TestCase &tc, fs::path transPath) {
+InstructionSet Interpreter::interpret(TestCase &tc) {
     // Evaluate TestCase
     // Caution: modulePath should be configured by user.
     std::optional<PyObject_ptr> PyInstsMaybe =
-        pyFuncEvaluate(fs::path(tc.path()), transPath.wstring());
+        pyFuncEvaluate(fs::path(tc.path()));
     if (!PyInstsMaybe.has_value()) {
         throw std::runtime_error("Failed to eval python function");
     }

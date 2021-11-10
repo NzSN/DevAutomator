@@ -4,6 +4,8 @@
 #include <memory>
 #include "utility.hpp"
 #include <optional>
+#include "DAL/instruction.hpp"
+#include <iostream>
 
 
 using std::string, std::wstring, std::filesystem::path;
@@ -15,16 +17,17 @@ void PyObjDeleter(PyObject *obj) {
  }
 
 
-std::optional<PyObject_ptr> pyFuncEvaluate(path p, wstring modulePath, string func) {
+/**
+ * This function should only called after Py_Initialize() and before Py_Finalize()
+ */
+std::optional<PyObject_ptr> pyFuncEvaluate(path p, string func) {
     PyObject *pValue = NULL, *pFunc = NULL;
 
-    wstring oldPath = Py_GetPath();
-    wstring newPath = oldPath + L":" + modulePath;
-    Py_SetPath(newPath.c_str());
+    // Get Python module name
+    string fileName = p.filename().string();
+    string modName = fileName.substr(0, fileName.find("."));
 
-    Py_Initialize();
-
-    PyObject *pName = PyUnicode_DecodeFSDefault(p.filename().c_str());
+    PyObject *pName = PyUnicode_DecodeFSDefault(modName.c_str());
     PyObject *pModule = PyImport_Import(pName);
     Py_DECREF(pName);
 
@@ -36,19 +39,15 @@ std::optional<PyObject_ptr> pyFuncEvaluate(path p, wstring modulePath, string fu
             if (pValue != NULL) {
                 Py_DECREF(pFunc);
                 Py_DECREF(pModule);
-                Py_Finalize();
                 return {{ pValue, PyObjDeleter }};
             }
         } else {
             Py_XDECREF(pFunc);
             Py_DECREF(pModule);
 
-            Py_Finalize();
             return std::nullopt;
         }
     }
-
-    Py_Finalize();
 
     return std::nullopt;
 }

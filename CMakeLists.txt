@@ -15,7 +15,11 @@ set(SRCFs
   ${SRCs}/tcdb/tcdb.cc
   ${SRCs}/tcdb/tcdb_connector.cc
   ${SRCs}/interpreter.cc
-  ${SRCs}/utility/pyFuncEvaluate.cc)
+  ${SRCs}/utility/pyFuncEvaluate.cc
+  ${SRCs}/interpreter.cc
+  ${SRCs}/instruction/instruction.cc
+  )
+
 set(INCLUDE
   ${ROOT}/include
   ${ROOT}/include/lib

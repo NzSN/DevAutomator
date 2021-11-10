@@ -277,7 +277,7 @@ def da_call_transform(insts: dal.InstGrp, o: typ.Any, recur_count: int) -> Snipp
     retVar = insts.compileDict[insts.VAR_ID_GEN].gen()
     var = dal.Var(retVar)
 
-    op_inst = dal.OInst(
+    op_inst = dal.Op(
         opInfo.opcode,
         core.DList(args),
         var
@@ -296,7 +296,7 @@ def da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
     assert isinstance(op, core.Operation)
 
     opInfos = op.op()
-    op_inst = dal.OInst(
+    op_inst = dal.Op(
         opInfos.opcode,
         core.DList(opInfos.opargs),
         dal.Var(""))

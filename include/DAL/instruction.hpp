@@ -13,17 +13,20 @@ typedef enum {
     JMP_FALSE_INST,
     DEF_INST,
     EQUAL_INST,
+    OPER_INST,
 } InstCode;
 
 class Instruction {
 public:
+    Instruction() = default;
     Instruction(InstCode iCode_) : iCode(iCode_) {}
-    virtual ~Instruction() = 0;
+    virtual ~Instruction() {};
     int code() const {
         return iCode;
     }
-    virtual void eval(DAL_Environment&) = 0;
-protected:
+    virtual void eval(DAL_Environment &){};
+
+  protected:
     // Instruction Code it's identifer of
     // Instructions.
     InstCode iCode;
@@ -46,6 +49,10 @@ public:
         insts.push_back(inst);
     }
 
+    size_t size() {
+        return insts.size();
+    }
+
     void eval(DAL_Environment &env);
 
 private:
@@ -55,7 +62,7 @@ private:
 
 class CONDInst : public Instruction {
 public:
-  CONDInst(InstCode iCode_) : Instruction(iCode_) {}
+    CONDInst(InstCode iCode_) : Instruction(iCode_) {}
 };
 
 class OPERInst: public Instruction {

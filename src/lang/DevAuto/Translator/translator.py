@@ -78,8 +78,8 @@ class Translator:
         self.preprocessing_after_transform(ast_nodes, [pyfunc.__name__])
 
         # TODO: Remove ast tree print
-        print("Transformed Source:\n\n")
-        print(astor.to_source(ast_nodes))
+        # print("Transformed Source:\n\n")
+        # print(astor.to_source(ast_nodes))
 
         # Transform from ast to List[Inst]
         exec(compile(ast_nodes, "", 'exec'), global_env, {})

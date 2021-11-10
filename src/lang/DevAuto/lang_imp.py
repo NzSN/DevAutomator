@@ -33,27 +33,19 @@ class Inst:
 
 class CInst(Inst):
 
-    COND_INST = "CInst"
-
-    def __init__(self) -> None:
-        Inst.__init__(self, self.COND_INST)
+    def __init__(self, icode: str) -> None:
+        Inst.__init__(self, icode)
 
 
 class OInst(Inst):
 
-    OPER_INST = "OInst"
-
-    def __init__(self, opcode: str,
+    def __init__(self, icode:str,
                  args: core.DList[core.DStr],
                  ret: Var) -> None:
 
-        Inst.__init__(self, self.OPER_INST)
-        self._opcode = opcode
+        Inst.__init__(self, icode)
         self._args = args
         self._ret = ret
-
-    def opcode(self) -> str:
-        return self._opcode
 
     def args(self) -> core.DList:
         return self._args
@@ -62,22 +54,21 @@ class OInst(Inst):
         return self._ret
 
     def __eq__(self, o: 'OInst') -> core.DBool:
-        return core.DBool(self._opcode == o.opcode()) and \
+        return core.DBool(self._inst_code == o._inst_code) and \
             self._args == o.args() and \
             self._ret == o.ret()
 
     def __str__(self) -> str:
-        return self._opcode + " [" +  \
+        return self._inst_code + " [" +  \
             " ".join([str(arg) for arg in self._args]) + \
             "] " + str(self._ret)
 
 
 class VInst(Inst):
 
-    VAR_OP_INST = "VInst"
 
-    def __init__(self, l: typ.Union[str, Var], r:typ.Union[str, Var]) -> None:
-        Inst.__init__(self, self.VAR_OP_INST)
+    def __init__(self, icode:str, l: typ.Union[str, Var], r:typ.Union[str, Var]) -> None:
+        Inst.__init__(self, icode)
         self._l = l
         self._r = r
 
@@ -90,28 +81,32 @@ class VInst(Inst):
 
 class Term(Inst):
 
-    TERM_INST = "TERM"
-
-    def __init__(self) -> None:
-        Inst.__init__(self, self.TERM_INST)
+    def __init__(self, icode:str) -> None:
+        Inst.__init__(self, icode)
 
 
 class Success(Term):
 
+    icode = "Success"
+
     def __init__(self) -> None:
-        Term.__init__(self)
+        Term.__init__(self, self.icode)
 
 
 class Fail(Term):
 
+    icode = "fail"
+
     def __init__(self) -> None:
-        Term.__init__(self)
+        Term.__init__(self, self.icode)
 
 
 class Jmp(CInst):
 
+    icode = "jmp"
+
     def __init__(self, to: core.DInt) -> None:
-        CInst.__init__(self)
+        CInst.__init__(self, self.icode)
         self._to = to
 
     def to(self) -> core.DInt:
@@ -120,9 +115,12 @@ class Jmp(CInst):
 
 class JmpTrue(CInst):
 
+    icode = "jmptrue"
+
     def __init__(self,
                  test: typ.Union[core.DBool, Var],
                  idx: core.DInt) -> None:
+        CInst.__init__(self, self.icode)
         self._test = test
         self._idx = idx
 
@@ -138,8 +136,11 @@ class JmpTrue(CInst):
 
 class JmpFalse(CInst):
 
+    icode = "jmpfalse"
+
     def __init__(self, test: typ.Union[core.DBool, Var],
                  idx: core.DInt) -> None:
+        CInst.__init__(self, self.icode)
         self._test = test
         self._idx = idx
 
@@ -159,14 +160,32 @@ class Jmpeq(CInst):
 
 class Op(OInst):
 
+    icode = "op"
+
     def __init__(self, opcode: str, args: core.DList[core.DStr], ret: Var) -> None:
-        OInst.__init__(self, opcode, args, ret)
+        OInst.__init__(self, self.icode, args, ret)
+        self._opcode = opcode
+        self._src = ""
+        self._dst = ""
+
+    def src(self) -> str:
+        return self._src
+
+    def dst(self) -> str:
+        return self._src
+
+    def __str__(self) -> str:
+        return self._opcode + " [" +  \
+            " ".join([str(arg) for arg in self._args]) + \
+            "] " + str(self._ret)
 
 
 class Equal(VInst):
 
+    icode = "equal"
+
     def __init__(self, l: typ.Union[str, Var], r: typ.Union[str, Var], ret: Var) -> None:
-        VInst.__init__(self, l, r)
+        VInst.__init__(self, self.icode, l, r)
         self._ret = ret
 
     def __str__(self) -> str:
@@ -176,7 +195,10 @@ class Equal(VInst):
 
 class Def(VInst):
 
+    icode = "def"
+
     def __init__(self, ident: str, value: core.DType) -> None:
+        VInst.__init__(self, self.icode, "", "")
         self._ident = ident
         self._value = value
 
@@ -192,7 +214,10 @@ class Def(VInst):
 
 class Assign(VInst):
 
+    icode = "assign"
+
     def __init__(self, ident: str, value: str) -> None:
+        VInst.__init__(self, self.icode, "", "")
         self._ident = ident
         self._value = value
 
