@@ -279,7 +279,7 @@ def da_call_transform(insts: dal.InstGrp, o: typ.Any, recur_count: int) -> Snipp
 
     op_inst = dal.Op(
         opInfo.opcode,
-        core.DList(args),
+        args,
         var
     )
     insts.addInst(op_inst)
@@ -298,7 +298,7 @@ def da_oper_convert(insts: dal.InstGrp, val: core.DType) -> core.DType:
     opInfos = op.op()
     op_inst = dal.Op(
         opInfos.opcode,
-        core.DList(opInfos.opargs),
+        opInfos.opargs,
         dal.Var(""))
     insts.addInst(op_inst)
     return val

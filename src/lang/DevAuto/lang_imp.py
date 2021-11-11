@@ -26,6 +26,7 @@ class Inst:
 
     def __init__(self, icode: str) -> None:
         self._inst_code = icode
+        self._inst_code_int = 0
 
     def code(self) -> str:
         return self._inst_code
@@ -40,14 +41,14 @@ class CInst(Inst):
 class OInst(Inst):
 
     def __init__(self, icode:str,
-                 args: core.DList[core.DStr],
+                 args: typ.List[core.DStr],
                  ret: Var) -> None:
 
         Inst.__init__(self, icode)
         self._args = args
         self._ret = ret
 
-    def args(self) -> core.DList:
+    def args(self) -> typ.List[core.DStr]:
         return self._args
 
     def ret(self) -> Var:
@@ -55,7 +56,7 @@ class OInst(Inst):
 
     def __eq__(self, o: 'OInst') -> core.DBool:
         return core.DBool(self._inst_code == o._inst_code) and \
-            self._args == o.args() and \
+            core.DBool(self._args == o.args()) and \
             self._ret == o.ret()
 
     def __str__(self) -> str:
@@ -91,6 +92,7 @@ class Success(Term):
 
     def __init__(self) -> None:
         Term.__init__(self, self.icode)
+        self._inst_code_int = INST_MAP[self.icode]
 
 
 class Fail(Term):
@@ -99,6 +101,7 @@ class Fail(Term):
 
     def __init__(self) -> None:
         Term.__init__(self, self.icode)
+        self._inst_code_int = INST_MAP[self.icode]
 
 
 class Jmp(CInst):
@@ -107,6 +110,7 @@ class Jmp(CInst):
 
     def __init__(self, to: core.DInt) -> None:
         CInst.__init__(self, self.icode)
+        self._inst_code_int = INST_MAP[self.icode]
         self._to = to
 
     def to(self) -> core.DInt:
@@ -121,6 +125,7 @@ class JmpTrue(CInst):
                  test: typ.Union[core.DBool, Var],
                  idx: core.DInt) -> None:
         CInst.__init__(self, self.icode)
+        self._inst_code_int = INST_MAP[self.icode]
         self._test = test
         self._idx = idx
 
@@ -141,6 +146,7 @@ class JmpFalse(CInst):
     def __init__(self, test: typ.Union[core.DBool, Var],
                  idx: core.DInt) -> None:
         CInst.__init__(self, self.icode)
+        self._inst_code_int = INST_MAP[self.icode]
         self._test = test
         self._idx = idx
 
@@ -162,8 +168,9 @@ class Op(OInst):
 
     icode = "op"
 
-    def __init__(self, opcode: str, args: core.DList[core.DStr], ret: Var) -> None:
+    def __init__(self, opcode: str, args: typ.List[core.DStr], ret: Var) -> None:
         OInst.__init__(self, self.icode, args, ret)
+        self._inst_code_int = INST_MAP[self.icode]
         self._opcode = opcode
         self._src = ""
         self._dst = ""
@@ -186,6 +193,7 @@ class Equal(VInst):
 
     def __init__(self, l: typ.Union[str, Var], r: typ.Union[str, Var], ret: Var) -> None:
         VInst.__init__(self, self.icode, l, r)
+        self._inst_code_int = INST_MAP[self.icode]
         self._ret = ret
 
     def __str__(self) -> str:
@@ -199,6 +207,7 @@ class Def(VInst):
 
     def __init__(self, ident: str, value: core.DType) -> None:
         VInst.__init__(self, self.icode, "", "")
+        self._inst_code_int = INST_MAP[self.icode]
         self._ident = ident
         self._value = value
 
@@ -218,6 +227,7 @@ class Assign(VInst):
 
     def __init__(self, ident: str, value: str) -> None:
         VInst.__init__(self, self.icode, "", "")
+        self._inst_code_int = INST_MAP[self.icode]
         self._ident = ident
         self._value = value
 
@@ -415,3 +425,14 @@ def function(env):
         return DFunc(f, env)
 
     return deco
+
+
+
+INST_MAP = {
+    Jmp.icode : 0,
+    JmpTrue.icode : 1,
+    JmpFalse.icode : 2,
+    Def.icode : 3,
+    Equal.icode : 4,
+    Op.icode : 5
+}
