@@ -77,5 +77,11 @@ protected:
 
 TEST_F(OperInstInterpret_Fixture, Eval) {
     TestCase tc {"tc", "default", testPath+testCase+".py"};
-    itp->interpret(tc);
+    InstructionSet insts = itp->interpret(tc);
+
+    // There should only one Instruction
+    EXPECT_EQ(insts.size(), 1);
+
+    InstPtr ptr = *insts.begin();
+    EXPECT_EQ(ptr->code(), OPER_INST);
 }
