@@ -5,6 +5,7 @@
 #include <optional>
 #include "DAL/cond_insts.hpp"
 #include "DAL/var_insts.hpp"
+#include "DAL/oper_insts.hpp"
 
 namespace fs = std::filesystem;
 using std::unique_ptr, std::shared_ptr;
@@ -13,8 +14,8 @@ using std::unique_ptr, std::shared_ptr;
 namespace Interpreter_Internal {
 
     shared_ptr<Instruction> instTrans(PyObject *PyInst) {
-        string opcode = PyUnicode_AsUTF8(
-            PyObject_GetAttr(PyInst, PyUnicode_FromString("_inst_code")));
+        int opcode = PyLong_AsLong(
+            PyObject_GetAttr(PyInst, PyUnicode_FromString("_inst_code_int")));
 
         switch (opcode) {
         case JMP_INST: {
@@ -31,6 +32,9 @@ namespace Interpreter_Internal {
         }
         case EQUAL_INST : {
             return std::make_shared<EQUAL>(PyInst);
+        }
+        case OPER_INST : {
+            return std::make_shared<Oper>(PyInst);
         }
         }
         return NULL;
