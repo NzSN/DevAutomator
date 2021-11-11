@@ -35,25 +35,24 @@ private:
 
 class EQUAL : public VARInst {
 public:
-    EQUAL(TERM left, TERM right) :
+    EQUAL(std::shared_ptr<TERM> left, std::shared_ptr<TERM> right) :
         VARInst(EQUAL_INST), leftTerm(left), rightTerm(right) {}
-    EQUAL(PyObject *PyEqual):
-        VARInst(EQUAL_INST) {}
+    EQUAL(PyObject *PyEqual);
     ~EQUAL() {}
 
     void eval(DAL_Environment &);
 
-    TERM left() {
+    std::shared_ptr<TERM> left() {
         return leftTerm;
     }
 
-    TERM right() {
+    std::shared_ptr<TERM> right() {
         return rightTerm;
     }
 
   private:
-    TERM leftTerm;
-    TERM rightTerm;
+    std::shared_ptr<TERM> leftTerm;
+    std::shared_ptr<TERM> rightTerm;
 };
 
 

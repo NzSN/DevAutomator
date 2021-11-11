@@ -3,8 +3,7 @@
 #include "environment.hpp"
 #include <Python.h>
 #include <functional>
-
-using std::function;
+#include <memory>
 
 
 #ifndef COND_INSTS_H
@@ -40,16 +39,16 @@ class JMP_TRUE: public JMP {
      * if the condition is true.
      */
 public:
-    JMP_TRUE(int idx, TERM cond_) :
+    JMP_TRUE(int idx, std::shared_ptr<TERM> cond_) :
         JMP(idx), cond(cond_) {
         toIdx = JMP_TRUE_INST;
     }
-    JMP_TRUE(PyObject *PyJmp): JMP(PyJmp) {}
-    TERM condition() {
+    JMP_TRUE(PyObject *PyJmp);
+    std::shared_ptr<TERM> condition() {
         return cond;
     }
 private:
-    TERM cond;
+    std::shared_ptr<TERM> cond;
 };
 
 
@@ -60,17 +59,17 @@ class JMP_FALSE: public JMP {
      * if the condition is false.
      */
 public:
-    JMP_FALSE(int idx, TERM cond_) :
+    JMP_FALSE(int idx, std::shared_ptr<TERM> cond_) :
         JMP(idx), cond(cond_) {
         toIdx = JMP_FALSE_INST;
     }
-    JMP_FALSE(PyObject *PyJmp) : JMP(PyJmp) {}
+    JMP_FALSE(PyObject *PyJmp);
 
-    TERM condition() {
+    std::shared_ptr<TERM> condition() {
         return cond;
     }
 private:
-    TERM cond;
+    std::shared_ptr<TERM> cond;
 };
 
 
