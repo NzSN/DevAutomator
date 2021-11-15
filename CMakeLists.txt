@@ -18,6 +18,8 @@ set(SRCFs
   ${SRCs}/utility/pyFuncEvaluate.cc
   ${SRCs}/interpreter.cc
   ${SRCs}/instruction/instruction.cc
+  ${SRCs}/dispatcher.cc
+  ${SRCs}/runner.cc
   )
 
 set(INCLUDE
@@ -57,7 +59,10 @@ set(TEST_OBJs
   # Interpreter testcases
   ${TESTs}/interpreter_test.cc
   # Utility testcases
-  ${TESTs}/utility_test.cc)
+  ${TESTs}/utility_test.cc
+  # Dispatcher testcases
+  ${TESTs}/dispatcher_test.cc
+  ${TESTs}/runner_test.cc)
 
 
 add_executable(unittest ${TEST_OBJs} ${SRCFs})
@@ -69,6 +74,7 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 
 # Link Google Test
 target_link_libraries(unittest gtest_main)
+target_link_libraries(unittest boost_system)
 
 # Memory check
 add_test(NAME UNITTESTING_WITH_MEMORY_LEAK_CHECK
