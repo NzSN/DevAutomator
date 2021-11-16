@@ -4,6 +4,7 @@
 #include <memory>
 #include <map>
 #include <exception>
+#include <concepts>
 
 #ifndef RUNNER_H
 #define RUNNER_H
@@ -17,7 +18,7 @@ typedef enum RunnerSignal {
 
 class Runner {
 public:
-    virtual ~Runner() = 0;
+    virtual ~Runner();
     virtual void start() = 0;
     virtual void stop() = 0;
     void setIdent(std::string ident_) { ident = ident_; }
@@ -25,6 +26,11 @@ public:
 private:
     std::string ident;
 };
+
+
+template<typename T>
+concept Runnable = std::is_base_of<Runner, T>::value;
+
 
 class JobRunner : public Runner {
 public:
@@ -34,7 +40,7 @@ public:
     void stop();
 };
 
-template<typename _Runner_T>
+template<Runnable _Runner_T>
 class RunnerLake {
 public:
     void create(Job &j);
@@ -49,13 +55,13 @@ private:
 };
 
 
-template<typename _Runner_T>
+template<Runnable _Runner_T>
 std::shared_ptr<_Runner_T> RunnerLake<_Runner_T>::factory(Job &j) const {
     return std::make_shared<_Runner_T>(j);
 }
 
 
-template<typename _Runner_T>
+template<Runnable _Runner_T>
 void RunnerLake<_Runner_T>::create(Job &j) {
     std::string ident = j.getIdent();
 
@@ -66,7 +72,7 @@ void RunnerLake<_Runner_T>::create(Job &j) {
     runners[ident] = factory(j);
 }
 
-template<typename _Runner_T>
+template<Runnable _Runner_T>
 void RunnerLake<_Runner_T>::start(Job &j) {
     std::string ident = j.getIdent();
 
@@ -78,7 +84,7 @@ void RunnerLake<_Runner_T>::start(Job &j) {
 }
 
 
-template<typename _Runner_T>
+template<Runnable _Runner_T>
 void RunnerLake<_Runner_T>::stop(Job &j) {
     std::string ident = j.getIdent();
 
@@ -90,20 +96,20 @@ void RunnerLake<_Runner_T>::stop(Job &j) {
 }
 
 
-template<typename _Runner_T>
+template<Runnable _Runner_T>
 void RunnerLake<_Runner_T>::stopAll() {
     for (auto &i : runners)
         i.second->stop();
 }
 
 
-template<typename _Runner_T>
+template<Runnable _Runner_T>
 bool RunnerLake<_Runner_T>::exists(Job &j) {
     std::string ident = j.getIdent();
     return runners.contains(ident);
 }
 
-template<typename _Runner_T>
+template<Runnable _Runner_T>
 void RunnerLake<_Runner_T>::operator()(RunnerSignal sig, std::shared_ptr<Job> job) {
 
     try {
