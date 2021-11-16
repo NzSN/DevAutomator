@@ -80,7 +80,6 @@ void Dispatcher<T>::stop(std::shared_ptr<Job> job) {
 }
 
 
-
 class JobManager {
 public:
     JobManager();
