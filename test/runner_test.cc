@@ -21,20 +21,20 @@ private:
 };
 
 
-class TrivialLake : public ::testing::Test {
+class RunnerLake_Fixture : public ::testing::Test {
 protected:
     RunnerLake<TrivialRunner> lake;
 };
 
 
-TEST_F(TrivialLake, create) {
+TEST_F(RunnerLake_Fixture, create) {
     Job j {"ID"};
     lake.create(j);
 
     EXPECT_TRUE(lake.exists(j));
 }
 
-TEST_F(TrivialLake, create_redundant) {
+TEST_F(RunnerLake_Fixture, create_redundant) {
     /**
      * l should failed to be created
      */
@@ -47,10 +47,10 @@ TEST_F(TrivialLake, create_redundant) {
     } catch (std::runtime_error &e) {}
 }
 
-TEST_F(TrivialLake, start) {}
+TEST_F(RunnerLake_Fixture, start) {}
 
-TEST_F(TrivialLake, stop) {}
+TEST_F(RunnerLake_Fixture, stop) {}
 
-TEST_F(TrivialLake, stopAll) {}
+TEST_F(RunnerLake_Fixture, stopAll) {}
 
-TEST_F(TrivialLake, Callable) {}
+TEST_F(RunnerLake_Fixture, Callable) {}

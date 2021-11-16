@@ -10,7 +10,7 @@ namespace fs = std::filesystem;
 using std::string;
 
 
-class TCDB_LocalDrivers: public ::testing::Test {
+class TCDB_LocalDrivers_Fixture: public ::testing::Test {
     /**
      * This fixture create a TCDB with three groups:
      * + Group1
@@ -71,7 +71,7 @@ protected:
 };
 
 
-TEST_F(TCDB_LocalDrivers, DriverActiveCheck) {
+TEST_F(TCDB_LocalDrivers_Fixture, DriverActiveCheck) {
 
     // Active the TCDB
     driver.active();
@@ -83,12 +83,12 @@ TEST_F(TCDB_LocalDrivers, DriverActiveCheck) {
 }
 
 
-TEST_F(TCDB_LocalDrivers, DefaultStatusCheck) {
+TEST_F(TCDB_LocalDrivers_Fixture, DefaultStatusCheck) {
     EXPECT_EQ(driver.isAlive(), false);
 }
 
 
-TEST_F(TCDB_LocalDrivers, TCDB_FileSystemStructureCheck) {
+TEST_F(TCDB_LocalDrivers_Fixture, TCDB_FileSystemStructureCheck) {
     // Active the TCDB
     driver.active();
 
@@ -106,7 +106,7 @@ TEST_F(TCDB_LocalDrivers, TCDB_FileSystemStructureCheck) {
 }
 
 
-TEST_F(TCDB_LocalDrivers, TCDB_DataCheck) {
+TEST_F(TCDB_LocalDrivers_Fixture, TCDB_DataCheck) {
     // Active the TCDB
     driver.active();
 
