@@ -4,18 +4,22 @@
 #include <memory>
 #include <map>
 #include <exception>
-#include <concepts>
 
 #ifndef RUNNER_H
 #define RUNNER_H
 
-typedef enum RunnerSignal {
-    IDLE = 0,
+typedef enum OperSignal {
+    UNUSED = 0,
     CREATE_NEW_RUNNER,
     DESTROY_RUNNER,
     DESTROY_ALL_RUNNERS,
-} RunnerSignal;
+} OperSignal;
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+//                             Runner Definitions                            //
+///////////////////////////////////////////////////////////////////////////////
 class Runner {
 public:
     virtual ~Runner();
@@ -23,24 +27,19 @@ public:
     virtual void stop() = 0;
     void setIdent(std::string ident_) { ident = ident_; }
     std::string getIdent() const { return ident; };
-private:
+
+  private:
     std::string ident;
 };
 
-
-template<typename T>
-concept Runnable = std::is_base_of<Runner, T>::value;
-
-
-class JobRunner : public Runner {
+class RunnerFactory {
 public:
-    JobRunner(Job &j);
-    ~JobRunner() {}
-    void start();
-    void stop();
+    virtual std::shared_ptr<Runner> makeRunner(Job&) = 0;
 };
 
-template<Runnable _Runner_T>
+///////////////////////////////////////////////////////////////////////////////
+//                           RunnerLake Definitions                          //
+///////////////////////////////////////////////////////////////////////////////
 class RunnerLake {
 public:
     void create(Job &j);
@@ -48,90 +47,44 @@ public:
     void stop(Job &j);
     void stopAll();
     bool exists(Job &j);
-    virtual void operator()(RunnerSignal sig, std::shared_ptr<Job>);
+    void setFactory(std::shared_ptr<RunnerFactory>);
+    virtual void operator()(OperSignal sig, std::shared_ptr<Job>);
 private:
-    std::shared_ptr<_Runner_T> factory(Job &j) const;
-    std::map<std::string, std::shared_ptr<_Runner_T>> runners;
+    std::shared_ptr<RunnerFactory> factory;
+    std::map<std::string, std::shared_ptr<Runner>> runners;
 };
 
 
-template<Runnable _Runner_T>
-std::shared_ptr<_Runner_T> RunnerLake<_Runner_T>::factory(Job &j) const {
-    return std::make_shared<_Runner_T>(j);
-}
+///////////////////////////////////////////////////////////////////////////////
+//                         RunnerCommand Definitions                         //
+///////////////////////////////////////////////////////////////////////////////
+class RunnerCommand {
+public:
+    virtual ~RunnerCommand();
+    virtual void exec(RunnerLake&) = 0;
+private:
+    std::shared_ptr<Job> job;
+};
 
+class RCmdCreate : public RunnerCommand {
+public:
+    void exec(RunnerLake&);
+};
 
-template<Runnable _Runner_T>
-void RunnerLake<_Runner_T>::create(Job &j) {
-    std::string ident = j.getIdent();
+class RCmdDestroy : public RunnerCommand {
+public:
+    void exec(RunnerLake&);
+};
 
-    if (runners.contains(ident)) {
-        throw std::runtime_error("Runner("+ ident +")already exists");
-    }
+class RCmdDestroyAll : public RunnerCommand {
+public:
+    void exec(RunnerLake&);
+};
 
-    runners[ident] = factory(j);
-}
-
-template<Runnable _Runner_T>
-void RunnerLake<_Runner_T>::start(Job &j) {
-    std::string ident = j.getIdent();
-
-    if (!runners.contains(ident)) {
-        throw std::runtime_error("Runner (" + ident + ") not found");
-    }
-
-    runners[ident]->start();
-}
-
-
-template<Runnable _Runner_T>
-void RunnerLake<_Runner_T>::stop(Job &j) {
-    std::string ident = j.getIdent();
-
-    if (!runners.contains(ident)) {
-        throw std::runtime_error("Runner (" + ident + ") not found");
-    }
-
-    runners[ident]->stop();
-}
-
-
-template<Runnable _Runner_T>
-void RunnerLake<_Runner_T>::stopAll() {
-    for (auto &i : runners)
-        i.second->stop();
-}
-
-
-template<Runnable _Runner_T>
-bool RunnerLake<_Runner_T>::exists(Job &j) {
-    std::string ident = j.getIdent();
-    return runners.contains(ident);
-}
-
-template<Runnable _Runner_T>
-void RunnerLake<_Runner_T>::operator()(RunnerSignal sig, std::shared_ptr<Job> job) {
-
-    try {
-        switch (static_cast<int>(sig)) {
-        case CREATE_NEW_RUNNER:
-            create(*job);
-            start(*job);
-            break;
-        case DESTROY_RUNNER:
-            stop(*job);
-            break;
-        case DESTROY_ALL_RUNNERS:
-            stopAll();
-            break;
-      }
-    } catch (std::exception &e) {
-        std::string msg = e.what();
-        throw std::runtime_error(
-            "RunnerLake failed with op: " + std::to_string(sig) + "\n"
-            "Message:\n" +  msg);
-    }
-}
+class RunnerCommandFactory {
+public:
+    static std::unique_ptr<RunnerCommand> makeCommand(OperSignal, Job &job);
+};
 
 
 #endif /* RUNNER_H */

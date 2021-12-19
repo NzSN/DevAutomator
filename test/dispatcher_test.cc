@@ -5,7 +5,7 @@
 #include "runner.hpp"
 
 
-class TrivialLake : public RunnerLake<JobRunner> {
+class TrivialLake : public RunnerLake {
 public:
     void create(Job &j) {
         sig = CREATE_NEW_RUNNER;
@@ -19,7 +19,7 @@ public:
 
     TrivialLake() = default;
 
-    void operator()(RunnerSignal sig, std::shared_ptr<Job> j) {
+    void operator()(OperSignal sig, std::shared_ptr<Job> j) {
         switch (static_cast<int>(sig)) {
         case CREATE_NEW_RUNNER:
             create(*j);
@@ -31,12 +31,12 @@ public:
             stopAll();
         }
     }
-    RunnerSignal sig = IDLE;
+    OperSignal sig = UNUSED;
 };
 
 class Dispatcher_Fixture : public ::testing::Test {
 protected:
-    Dispatcher<JobRunner> d;
+    Dispatcher d;
 };
 
 

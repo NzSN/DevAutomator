@@ -23,7 +23,7 @@ private:
 
 class RunnerLake_Fixture : public ::testing::Test {
 protected:
-    RunnerLake<TrivialRunner> lake;
+    RunnerLake lake;
 };
 
 
