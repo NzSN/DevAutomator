@@ -4,7 +4,7 @@ enable_testing()
 
 # Project define
 project(DevAutomator)
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -g -pthread")
 set(ROOT .)
 set(SRCs ${ROOT}/src)
 set(Libs ${ROOT}/lib)
