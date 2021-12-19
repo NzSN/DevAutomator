@@ -62,6 +62,7 @@ set(TEST_OBJs
   ${TESTs}/utility_test.cc
   # Dispatcher testcases
   ${TESTs}/dispatcher_test.cc
+  # Runner testcases
   ${TESTs}/runner_test.cc)
 
 
