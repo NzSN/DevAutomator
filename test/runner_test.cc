@@ -20,18 +20,30 @@ private:
     int state = R_STOP;
 };
 
+class TrivialRunnerFactory : public RunnerFactory {
+public:
+    std::shared_ptr<Runner> makeRunner(Job &j) {
+        return std::make_shared<TrivialRunner>(j);
+    }
+};
+
 
 class RunnerLake_Fixture : public ::testing::Test {
 protected:
-    RunnerLake lake;
+    void SetUp() override {
+        lake = std::make_unique<RunnerLake>();
+        lake->setFactory(std::make_shared<TrivialRunnerFactory>());
+    }
+
+    std::unique_ptr<RunnerLake> lake;
 };
 
 
 TEST_F(RunnerLake_Fixture, create) {
     Job j {"ID"};
-    lake.create(j);
+    lake->create(j);
 
-    EXPECT_TRUE(lake.exists(j));
+    EXPECT_TRUE(lake->exists(j));
 }
 
 TEST_F(RunnerLake_Fixture, create_redundant) {
@@ -39,10 +51,10 @@ TEST_F(RunnerLake_Fixture, create_redundant) {
      * l should failed to be created
      */
     Job j{"ID"}, l{"ID"};
-    lake.create(j);
+    lake->create(j);
 
     try {
-      lake.create(l);
+      lake->create(l);
       FAIL();
     } catch (std::runtime_error &e) {}
 }

@@ -82,6 +82,10 @@ bool RunnerLake::exists(Job &j) {
     return runners.contains(ident);
 }
 
+void RunnerLake::setFactory(std::shared_ptr<RunnerFactory> factory_) {
+    factory = factory_;
+}
+
 void RunnerLake::operator()(OperSignal sig, std::shared_ptr<Job> job) {
     std::unique_ptr<RunnerCommand> cmd =
         RunnerCommandFactory::makeCommand(sig, *job);
