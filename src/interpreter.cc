@@ -44,10 +44,10 @@ namespace Interpreter_Internal {
         InstructionSet set;
 
         // type(PyObject_ptr) should be 'InstGrp'
-        bool isInstGrp = PyObject_HasAttr(
+        bool attrCheck = PyObject_HasAttr(
             PyInsts.get(), PyUnicode_FromString("_insts"));
 
-        if (!isInstGrp) {
+        if (!attrCheck) {
             // Error
             throw std::runtime_error(
                 "PyINstsToNativeInsts: Not an InstGrp");
